@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GrKa X</string>
+
+    <!-- Tabs -->
+    <string name="tab_home">Home</string>
+    <string name="tab_servers">Servers</string>
+    <string name="tab_subs">Subscriptions</string>
+    <string name="tab_settings">Settings</string>
+
+    <!-- Connection states -->
+    <string name="state_connected">Connected</string>
+    <string name="state_connecting">Connecting…</string>
+    <string name="state_stopping">Stopping…</string>
+    <string name="state_disconnected">Disconnected</string>
+
+    <!-- Home -->
+    <string name="no_server_hint">No server selected</string>
+    <string name="no_server_selected">Tap to choose a server</string>
+    <string name="change">Change</string>
+    <string name="stat_download">Download</string>
+    <string name="stat_upload">Upload</string>
+    <string name="latency_check">Latency</string>
+    <string name="latency_hint">Test the active connection</string>
+    <string name="latency_ok">%1$d ms</string>
+    <string name="latency_fail">Test failed</string>
+    <string name="test">Test</string>
+
+    <!-- Servers -->
+    <string name="add">Add</string>
+    <string name="ping_all">Test all</string>
+    <string name="import_clipboard">Import from clipboard</string>
+    <string name="import_manual">Paste link</string>
+    <string name="servers_empty">No servers yet.\nAdd a link or a subscription.</string>
+    <string name="show_qr">Show QR</string>
+    <string name="copy_link">Copy link</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="copied">Copied</string>
+    <string name="no_link">No share link for this server</string>
+    <string name="delete_server_title">Delete server?</string>
+    <string name="import_empty">Clipboard is empty</string>
+    <string name="import_none">No valid links found</string>
+    <string name="import_ok">Imported %1$d server(s)</string>
+
+    <!-- Subscriptions -->
+    <string name="update_all">Update all</string>
+    <string name="subs_empty">No subscriptions yet.\nAdd one to auto-fetch servers.</string>
+    <string name="sub_add_title">Add subscription</string>
+    <string name="sub_edit_title">Edit subscription</string>
+    <string name="sub_name">Name</string>
+    <string name="sub_url">URL</string>
+    <string name="sub_url_invalid">Enter a valid http(s) URL</string>
+    <string name="sub_updated">Updated: %1$d servers</string>
+    <string name="sub_update_failed">Update failed: %1$s</string>
+    <string name="sub_servers_count">%1$d servers</string>
+    <string name="sub_expires">expires %1$s</string>
+    <string name="sub_last_update">updated %1$s</string>
+    <string name="sub_traffic">%1$s / %2$s</string>
+    <string name="delete_sub_title">Delete subscription?</string>
+    <string name="delete_sub_text">\"%1$s\" and its servers will be removed.</string>
+
+    <!-- Settings sections -->
+    <string name="section_appearance">Appearance</string>
+    <string name="section_routing">Routing</string>
+    <string name="section_connection">Connection</string>
+    <string name="section_subscription">Subscription</string>
+    <string name="section_about">About</string>
+
+    <string name="theme">Theme</string>
+    <string name="theme_aurora">Aurora</string>
+    <string name="theme_ocean">Ocean</string>
+    <string name="theme_pearl">Pearl</string>
+
+    <string name="route_global">Global (proxy everything)</string>
+    <string name="route_bypass_lan">Bypass LAN</string>
+    <string name="route_bypass_ru">Bypass LAN + Russia</string>
+
+    <string name="block_quic">Block QUIC</string>
+    <string name="block_quic_hint">Force TCP for HTTP/3 sites; improves stability</string>
+    <string name="bypass_torrent">Bypass BitTorrent</string>
+    <string name="bypass_torrent_hint">Send torrent traffic directly, not via proxy</string>
+    <string name="ipv6">Enable IPv6</string>
+    <string name="ipv6_hint">Route IPv6 through the tunnel</string>
+    <string name="mux">Multiplexing (mux)</string>
+    <string name="mux_hint">Off by default; not used with XHTTP</string>
+    <string name="remote_dns">Remote DNS</string>
+
+    <string name="hwid">Send device ID (HWID)</string>
+    <string name="hwid_hint">Required by panels with a device limit (e.g. Remnawave)</string>
+    <string name="auto_start">Start on boot</string>
+    <string name="auto_start_hint">Reconnect the last server after reboot</string>
+
+    <string name="version">App version</string>
+    <string name="core_version">Xray core</string>
+
+    <!-- Notification -->
+    <string name="notification_channel">VPN status</string>
+    <string name="action_stop">Stop</string>
+
+    <!-- Errors -->
+    <string name="error_no_server">No server selected</string>
+    <string name="error_vpn_permission">VPN permission not granted</string>
+    <string name="error_tun_failed">Failed to establish the tunnel</string>
+    <string name="error_core_failed">Core failed to start</string>
+</resources>

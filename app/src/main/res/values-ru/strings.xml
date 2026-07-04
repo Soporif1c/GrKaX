@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GrKa X</string>
+
+    <!-- Tabs -->
+    <string name="tab_home">Главная</string>
+    <string name="tab_servers">Серверы</string>
+    <string name="tab_subs">Подписки</string>
+    <string name="tab_settings">Настройки</string>
+
+    <!-- Connection states -->
+    <string name="state_connected">Подключено</string>
+    <string name="state_connecting">Подключение…</string>
+    <string name="state_stopping">Отключение…</string>
+    <string name="state_disconnected">Отключено</string>
+
+    <!-- Home -->
+    <string name="no_server_hint">Сервер не выбран</string>
+    <string name="no_server_selected">Нажмите, чтобы выбрать сервер</string>
+    <string name="change">Сменить</string>
+    <string name="stat_download">Загрузка</string>
+    <string name="stat_upload">Отдача</string>
+    <string name="latency_check">Задержка</string>
+    <string name="latency_hint">Проверить активное соединение</string>
+    <string name="latency_ok">%1$d мс</string>
+    <string name="latency_fail">Ошибка проверки</string>
+    <string name="test">Тест</string>
+
+    <!-- Servers -->
+    <string name="add">Добавить</string>
+    <string name="ping_all">Проверить все</string>
+    <string name="import_clipboard">Импорт из буфера</string>
+    <string name="import_manual">Вставить ссылку</string>
+    <string name="servers_empty">Пока нет серверов.\nДобавьте ссылку или подписку.</string>
+    <string name="show_qr">Показать QR</string>
+    <string name="copy_link">Копировать ссылку</string>
+    <string name="delete">Удалить</string>
+    <string name="cancel">Отмена</string>
+    <string name="save">Сохранить</string>
+    <string name="copied">Скопировано</string>
+    <string name="no_link">У этого сервера нет ссылки</string>
+    <string name="delete_server_title">Удалить сервер?</string>
+    <string name="import_empty">Буфер обмена пуст</string>
+    <string name="import_none">Не найдено ни одной ссылки</string>
+    <string name="import_ok">Импортировано серверов: %1$d</string>
+
+    <!-- Subscriptions -->
+    <string name="update_all">Обновить все</string>
+    <string name="subs_empty">Пока нет подписок.\nДобавьте, чтобы серверы обновлялись автоматически.</string>
+    <string name="sub_add_title">Добавить подписку</string>
+    <string name="sub_edit_title">Изменить подписку</string>
+    <string name="sub_name">Название</string>
+    <string name="sub_url">Ссылка</string>
+    <string name="sub_url_invalid">Введите корректный http(s) адрес</string>
+    <string name="sub_updated">Обновлено: %1$d серверов</string>
+    <string name="sub_update_failed">Ошибка обновления: %1$s</string>
+    <string name="sub_servers_count">%1$d серверов</string>
+    <string name="sub_expires">истекает %1$s</string>
+    <string name="sub_last_update">обновлено %1$s</string>
+    <string name="sub_traffic">%1$s / %2$s</string>
+    <string name="delete_sub_title">Удалить подписку?</string>
+    <string name="delete_sub_text">«%1$s» и её серверы будут удалены.</string>
+
+    <!-- Settings sections -->
+    <string name="section_appearance">Оформление</string>
+    <string name="section_routing">Маршрутизация</string>
+    <string name="section_connection">Соединение</string>
+    <string name="section_subscription">Подписка</string>
+    <string name="section_about">О приложении</string>
+
+    <string name="theme">Тема</string>
+    <string name="theme_aurora">Аврора</string>
+    <string name="theme_ocean">Океан</string>
+    <string name="theme_pearl">Жемчуг</string>
+
+    <string name="route_global">Глобально (весь трафик через прокси)</string>
+    <string name="route_bypass_lan">В обход локальной сети</string>
+    <string name="route_bypass_ru">Обход локальной сети + Россия</string>
+
+    <string name="block_quic">Блокировать QUIC</string>
+    <string name="block_quic_hint">Принудительный TCP для сайтов на HTTP/3; повышает стабильность</string>
+    <string name="bypass_torrent">Торренты напрямую</string>
+    <string name="bypass_torrent_hint">Торрент-трафик идёт мимо прокси</string>
+    <string name="ipv6">Включить IPv6</string>
+    <string name="ipv6_hint">Пускать IPv6 через туннель</string>
+    <string name="mux">Мультиплексирование (mux)</string>
+    <string name="mux_hint">По умолчанию выключено; не работает с XHTTP</string>
+    <string name="remote_dns">Удалённый DNS</string>
+
+    <string name="hwid">Отправлять ID устройства (HWID)</string>
+    <string name="hwid_hint">Нужно для панелей с лимитом устройств (например, Remnawave)</string>
+    <string name="auto_start">Запуск при загрузке</string>
+    <string name="auto_start_hint">Переподключать последний сервер после перезагрузки</string>
+
+    <string name="version">Версия приложения</string>
+    <string name="core_version">Ядро Xray</string>
+
+    <!-- Notification -->
+    <string name="notification_channel">Статус VPN</string>
+    <string name="action_stop">Стоп</string>
+
+    <!-- Errors -->
+    <string name="error_no_server">Сервер не выбран</string>
+    <string name="error_vpn_permission">Нет разрешения на VPN</string>
+    <string name="error_tun_failed">Не удалось создать туннель</string>
+    <string name="error_core_failed">Не удалось запустить ядро</string>
+</resources>

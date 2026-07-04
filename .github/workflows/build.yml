@@ -1,0 +1,107 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        required: false
+        type: string
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+env:
+  HEV_TUN_TAG: '2.15.0'
+  LIBV2RAY_TAG: 'v26.6.27'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v4
+      with:
+        log-accepted-android-sdk-licenses: false
+        cmdline-tools-version: '14742923'
+        packages: 'platforms;android-37.0 build-tools;37.0.0 platform-tools'
+
+    - name: Install NDK
+      run: |
+        echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+          --channel=0 \
+          --install "ndk;29.0.14206865"
+        echo "NDK_HOME=$ANDROID_HOME/ndk/29.0.14206865" >> $GITHUB_ENV
+
+    - name: Checkout hev-socks5-tunnel
+      run: |
+        git clone --depth 1 --branch "$HEV_TUN_TAG" --recurse-submodules --shallow-submodules \
+          https://github.com/heiher/hev-socks5-tunnel.git hev-socks5-tunnel
+
+    - name: Build hev-socks5-tunnel JNI library
+      run: bash scripts/compile-hevtun.sh
+
+    - name: Download libv2ray (Xray core)
+      uses: robinraju/release-downloader@v1.13
+      with:
+        repository: '2dust/AndroidLibXrayLite'
+        tag: 'v26.6.27'
+        fileName: 'libv2ray.aar'
+        out-file-path: app/libs/
+
+    - name: Download geo assets
+      run: |
+        mkdir -p app/src/main/assets
+        curl -fL --retry 3 -o app/src/main/assets/geoip.dat \
+          https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
+        curl -fL --retry 3 -o app/src/main/assets/geosite.dat \
+          https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
+        ls -la app/src/main/assets/
+
+    - name: Setup Java
+      uses: actions/setup-java@v5
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+
+    - name: Decode Keystore
+      id: android_keystore
+      if: ${{ secrets.APP_KEYSTORE_BASE64 != '' }}
+      uses: timheuer/base64-to-file@v2.0.0
+      with:
+        fileName: "android_keystore.jks"
+        encodedString: ${{ secrets.APP_KEYSTORE_BASE64 }}
+
+    - name: Build APK
+      env:
+        # Empty when the secret is unset -> build.gradle.kts falls back to debug signing
+        GRKAX_KEYSTORE_FILE: ${{ steps.android_keystore.outputs.filePath }}
+        GRKAX_KEYSTORE_PASSWORD: ${{ secrets.APP_KEYSTORE_PASSWORD }}
+        GRKAX_KEY_ALIAS: ${{ secrets.APP_KEYSTORE_ALIAS }}
+        GRKAX_KEY_PASSWORD: ${{ secrets.APP_KEY_PASSWORD }}
+      run: |
+        echo "sdk.dir=${ANDROID_HOME}" > local.properties
+        chmod 755 gradlew
+        ./gradlew assembleRelease --stacktrace
+
+    - name: Upload APK artifacts
+      uses: actions/upload-artifact@v7
+      if: ${{ success() }}
+      with:
+        name: apk
+        path: app/build/outputs/apk/release/*.apk
+
+    - name: Upload APKs to release
+      if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+      uses: svenstaro/upload-release-action@v2
+      with:
+        file: app/build/outputs/apk/release/*.apk
+        tag: ${{ inputs.release_tag }}
+        file_glob: true
+        prerelease: false
