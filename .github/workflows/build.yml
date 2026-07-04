@@ -70,24 +70,24 @@ jobs:
         distribution: 'temurin'
         java-version: '21'
 
-    - name: Decode Keystore
-      id: android_keystore
-      if: ${{ secrets.APP_KEYSTORE_BASE64 != '' }}
-      uses: timheuer/base64-to-file@v2.0.0
-      with:
-        fileName: "android_keystore.jks"
-        encodedString: ${{ secrets.APP_KEYSTORE_BASE64 }}
-
     - name: Build APK
       env:
-        # Empty when the secret is unset -> build.gradle.kts falls back to debug signing
-        GRKAX_KEYSTORE_FILE: ${{ steps.android_keystore.outputs.filePath }}
+        # secrets are allowed in env; when unset these are empty strings and the
+        # build falls back to debug signing (build.gradle.kts handles that).
+        APP_KEYSTORE_BASE64: ${{ secrets.APP_KEYSTORE_BASE64 }}
         GRKAX_KEYSTORE_PASSWORD: ${{ secrets.APP_KEYSTORE_PASSWORD }}
         GRKAX_KEY_ALIAS: ${{ secrets.APP_KEYSTORE_ALIAS }}
         GRKAX_KEY_PASSWORD: ${{ secrets.APP_KEY_PASSWORD }}
       run: |
         echo "sdk.dir=${ANDROID_HOME}" > local.properties
         chmod 755 gradlew
+        if [ -n "$APP_KEYSTORE_BASE64" ]; then
+          echo "$APP_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/android_keystore.jks"
+          export GRKAX_KEYSTORE_FILE="$RUNNER_TEMP/android_keystore.jks"
+          echo "Using release keystore for signing."
+        else
+          echo "No keystore secret set; falling back to debug signing."
+        fi
         ./gradlew assembleRelease --stacktrace
 
     - name: Upload APK artifacts
