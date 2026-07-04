@@ -73,4 +73,7 @@ data class Subscription(
     var download: Long = -1,
     var total: Long = -1,
     var expire: Long = -1,
+    // Routing template shipped by an xray-json subscription (Remnawave). When
+    // set, it replaces the app's routing preset for this sub's profiles.
+    var routingJson: String? = null,
 )

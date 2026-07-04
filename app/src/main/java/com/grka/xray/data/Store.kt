@@ -112,6 +112,15 @@ object Store {
         return decodeProfile(id)
     }
 
+    /** Routing template of the subscription this profile belongs to, if any. */
+    fun routingTemplateFor(profile: Profile): String? {
+        val subId = profile.subId ?: return null
+        if (!useSubscriptionRouting) return null
+        val raw = subsKv.decodeString(subId) ?: return null
+        val sub = runCatching { json.decodeFromString<Subscription>(raw) }.getOrNull() ?: return null
+        return sub.routingJson?.takeIf { it.isNotBlank() }
+    }
+
     /** Replaces all profiles belonging to a subscription, keeping selection when possible. */
     fun replaceSubscriptionProfiles(subId: String, newProfiles: List<Profile>) {
         val selectedId = settingsKv.decodeString(KEY_SELECTED)
@@ -241,6 +250,10 @@ object Store {
     var hwidEnabled: Boolean
         get() = bool("hwid_enabled", true)
         set(v) { settingsKv.encode("hwid_enabled", v) }
+
+    var useSubscriptionRouting: Boolean
+        get() = bool("use_sub_routing", true)
+        set(v) { settingsKv.encode("use_sub_routing", v) }
 
     var geoAssetsVersion: Int
         get() = int("geo_assets_version", 0)

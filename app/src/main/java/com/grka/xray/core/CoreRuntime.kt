@@ -75,7 +75,8 @@ object CoreRuntime {
     fun startCore(context: Context, profile: Profile): Boolean {
         init(context)
         return try {
-            val config = ConfigBuilder.build(profile, Store.settingsSnapshot(), forTest = false)
+            val routing = Store.routingTemplateFor(profile)
+            val config = ConfigBuilder.build(profile, Store.settingsSnapshot(), forTest = false, routingJson = routing)
             Log.d(AppConfig.TAG, "Core config: $config")
             controller.startLoop(config, 0)
             if (!controller.isRunning) {

@@ -3,6 +3,7 @@ package com.grka.xray.net
 import android.content.Context
 import android.os.Build
 import com.grka.xray.BuildConfig
+import com.grka.xray.config.JsonSubscriptionParser
 import com.grka.xray.config.LinkParser
 import com.grka.xray.data.Store
 import com.grka.xray.data.Subscription
@@ -48,13 +49,27 @@ object SubscriptionManager {
                     return@withContext UpdateResult(false, error = "Empty response")
                 }
 
-                val profiles = LinkParser.parseBatch(body)
+                // Prefer an xray-json body (Remnawave); fall back to link lists.
+                var routingJson: String? = null
+                val profiles = if (JsonSubscriptionParser.looksLikeJson(body)) {
+                    val parsed = JsonSubscriptionParser.parse(body)
+                    if (parsed != null) {
+                        routingJson = parsed.routingJson
+                        parsed.profiles
+                    } else {
+                        LinkParser.parseBatch(body)
+                    }
+                } else {
+                    LinkParser.parseBatch(body)
+                }
+
                 if (profiles.isEmpty()) {
                     return@withContext UpdateResult(false, error = "No servers in response")
                 }
                 for (p in profiles) {
                     p.subId = sub.id
                 }
+                sub.routingJson = routingJson
                 Store.replaceSubscriptionProfiles(sub.id, profiles)
 
                 resp.header("subscription-userinfo")?.let { applyUserInfo(sub, it) }

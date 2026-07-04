@@ -104,4 +104,29 @@
     <string name="error_vpn_permission">Нет разрешения на VPN</string>
     <string name="error_tun_failed">Не удалось создать туннель</string>
     <string name="error_core_failed">Не удалось запустить ядро</string>
+
+    <!-- Universal servers screen -->
+    <string name="manual_group">Вручную</string>
+
+    <!-- Subscription routing -->
+    <string name="sub_routing">Роутинг из подписки</string>
+    <string name="sub_routing_hint">Применять правила маршрутизации из подписки (например, Remnawave) вместо пресета выше</string>
+
+    <!-- Per-app proxy -->
+    <string name="per_app_title">Прокси по приложениям</string>
+    <string name="per_app_off">Выкл (все приложения)</string>
+    <string name="per_app_bypass">Обход для выбранных</string>
+    <string name="per_app_only">Только выбранные</string>
+    <string name="per_app_off_hint">Весь трафик приложений идёт через VPN.</string>
+    <string name="per_app_bypass_hint">Выбранные приложения идут мимо VPN, напрямую.</string>
+    <string name="per_app_only_hint">Через VPN идут только выбранные приложения; остальные — напрямую.</string>
+    <string name="per_app_search">Поиск приложений…</string>
+
+    <!-- Update check -->
+    <string name="check_update">Проверить обновления</string>
+    <string name="check_update_hint">Искать новую версию на GitHub</string>
+    <string name="check_update_checking">Проверка…</string>
+    <string name="update_available">Доступно обновление: v%1$s — нажмите, чтобы открыть</string>
+    <string name="update_latest">У вас последняя версия</string>
+    <string name="update_check_failed">Ошибка проверки: %1$s</string>
 </resources>

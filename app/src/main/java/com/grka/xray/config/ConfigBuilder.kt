@@ -3,11 +3,14 @@ package com.grka.xray.config
 import com.grka.xray.AppConfig
 import com.grka.xray.data.Profile
 import com.grka.xray.data.SettingsSnapshot
+import com.grka.xray.util.Utils
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
@@ -15,13 +18,26 @@ import kotlinx.serialization.json.putJsonObject
 /**
  * Builds the Xray core JSON config from a profile plus app settings.
  *
- * The overall shape (stats/policy/socks inbound with sniffing/proxy+direct+block
- * outbounds/routing) follows the proven v2rayNG layout so that DNS and routing
- * behave correctly and the tunnel actually passes traffic.
+ * The stream/security section mirrors the field-for-field shape produced by
+ * the proven v2rayNG outbound builder so that transports like XHTTP and
+ * REALITY load and dial correctly.
  */
 object ConfigBuilder {
 
-    fun build(profile: Profile, s: SettingsSnapshot, forTest: Boolean): String {
+    private val json = Json { ignoreUnknownKeys = true }
+
+    /**
+     * @param routingJson optional routing template (e.g. from a Remnawave
+     *   subscription). When present it replaces the generated routing block.
+     */
+    fun build(
+        profile: Profile,
+        s: SettingsSnapshot,
+        forTest: Boolean,
+        routingJson: String? = null,
+    ): String {
+        val routingOverride = parseRouting(routingJson)
+
         val root = buildJsonObject {
             putJsonObject("log") {
                 put("loglevel", if (forTest) "none" else s.logLevel)
@@ -104,65 +120,93 @@ object ConfigBuilder {
                 }
             }
 
-            putJsonObject("routing") {
-                put("domainStrategy", "IPIfNonMatch")
-                putJsonArray("rules") {
-                    if (!forTest) {
-                        val bypass = s.routingPreset != AppConfig.ROUTE_GLOBAL
-                        if (s.routingPreset == AppConfig.ROUTE_BYPASS_RU) {
-                            // Plain-DNS queries to the domestic resolver must go direct
-                            addJsonObject {
-                                put("type", "field")
-                                put("outboundTag", "direct")
-                                put("port", "53")
-                                putJsonArray("ip") { add(s.directDns) }
-                            }
-                        }
-                        if (s.blockQuic) {
-                            addJsonObject {
-                                put("type", "field")
-                                put("outboundTag", "block")
-                                put("network", "udp")
-                                put("port", "443")
-                            }
-                        }
-                        if (s.bypassTorrent) {
-                            addJsonObject {
-                                put("type", "field")
-                                put("outboundTag", "direct")
-                                putJsonArray("protocol") { add("bittorrent") }
-                            }
-                        }
-                        if (bypass) {
-                            addJsonObject {
-                                put("type", "field")
-                                put("outboundTag", "direct")
-                                putJsonArray("ip") { add("geoip:private") }
-                            }
-                            addJsonObject {
-                                put("type", "field")
-                                put("outboundTag", "direct")
-                                putJsonArray("domain") { add("geosite:private") }
-                            }
-                        }
-                        if (s.routingPreset == AppConfig.ROUTE_BYPASS_RU) {
-                            addJsonObject {
-                                put("type", "field")
-                                put("outboundTag", "direct")
-                                putJsonArray("domain") { add("geosite:category-ru") }
-                            }
-                            addJsonObject {
-                                put("type", "field")
-                                put("outboundTag", "direct")
-                                putJsonArray("ip") { add("geoip:ru") }
-                            }
-                        }
-                    }
+            if (!forTest) {
+                if (routingOverride != null) {
+                    put("routing", routingOverride)
+                } else {
+                    put("routing", buildRouting(s))
                 }
             }
         }
         return root.toString()
     }
+
+    // ---------------- routing ----------------
+
+    private fun buildRouting(s: SettingsSnapshot): JsonObject = buildJsonObject {
+        put("domainStrategy", "IPIfNonMatch")
+        putJsonArray("rules") {
+            val bypass = s.routingPreset != AppConfig.ROUTE_GLOBAL
+            if (s.routingPreset == AppConfig.ROUTE_BYPASS_RU) {
+                addJsonObject {
+                    put("type", "field")
+                    put("outboundTag", "direct")
+                    put("port", "53")
+                    putJsonArray("ip") { add(s.directDns) }
+                }
+            }
+            if (s.blockQuic) {
+                addJsonObject {
+                    put("type", "field")
+                    put("outboundTag", "block")
+                    put("network", "udp")
+                    put("port", "443")
+                }
+            }
+            if (s.bypassTorrent) {
+                addJsonObject {
+                    put("type", "field")
+                    put("outboundTag", "direct")
+                    putJsonArray("protocol") { add("bittorrent") }
+                }
+            }
+            if (bypass) {
+                addJsonObject {
+                    put("type", "field")
+                    put("outboundTag", "direct")
+                    putJsonArray("ip") { add("geoip:private") }
+                }
+                addJsonObject {
+                    put("type", "field")
+                    put("outboundTag", "direct")
+                    putJsonArray("domain") { add("geosite:private") }
+                }
+            }
+            if (s.routingPreset == AppConfig.ROUTE_BYPASS_RU) {
+                addJsonObject {
+                    put("type", "field")
+                    put("outboundTag", "direct")
+                    putJsonArray("domain") { add("geosite:category-ru") }
+                }
+                addJsonObject {
+                    put("type", "field")
+                    put("outboundTag", "direct")
+                    putJsonArray("ip") { add("geoip:ru") }
+                }
+            }
+        }
+    }
+
+    /**
+     * Accepts either a bare routing object ({"rules":[...]}) or a full Xray
+     * config that contains a "routing" key, and returns the routing object.
+     */
+    private fun parseRouting(routingJson: String?): JsonObject? {
+        val raw = routingJson?.takeIf { it.isNotBlank() } ?: return null
+        return try {
+            val element = json.parseToJsonElement(raw)
+            val obj = element.jsonObject
+            when {
+                obj.containsKey("rules") -> obj
+                obj["routing"] != null -> obj["routing"]!!.jsonObject
+                else -> null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // ---------------- outbound ----------------
 
     private fun buildProxyOutbound(p: Profile, s: SettingsSnapshot): JsonObject = buildJsonObject {
         put("tag", "proxy")
@@ -180,7 +224,9 @@ object ConfigBuilder {
                                     put("level", 8)
                                     if (p.protocol == "vless") {
                                         put("encryption", p.method?.takeIf { it.isNotBlank() } ?: "none")
-                                        p.flow?.takeIf { it.isNotBlank() }?.let { put("flow", it) }
+                                        // xtls-rprx-vision only works over raw TCP; never emit it for xhttp
+                                        val flow = p.flow?.takeIf { it.isNotBlank() && p.network == "tcp" }
+                                        if (flow != null) put("flow", flow)
                                     } else {
                                         put("alterId", 0)
                                         put("security", p.method?.takeIf { it.isNotBlank() } ?: "auto")
@@ -224,65 +270,48 @@ object ConfigBuilder {
     }
 
     private fun buildStreamSettings(p: Profile): JsonObject = buildJsonObject {
-        put("network", p.network)
-        val security = p.security ?: "none"
-        put("security", security)
+        val network = p.network.ifBlank { "tcp" }
+        put("network", network)
 
-        if (security == "tls") {
-            putJsonObject("tlsSettings") {
-                val sniValue = p.sni?.takeIf { it.isNotBlank() }
-                    ?: p.host?.takeIf { it.isNotBlank() }
-                    ?: p.server
-                put("serverName", sniValue)
-                put("allowInsecure", p.allowInsecure)
-                p.fingerprint?.takeIf { it.isNotBlank() }?.let { put("fingerprint", it) }
-                p.alpn?.takeIf { it.isNotBlank() }?.let { alpn ->
-                    putJsonArray("alpn") {
-                        alpn.split(",").map { it.trim() }.filter { it.isNotEmpty() }.forEach { add(it) }
-                    }
-                }
-            }
-        }
+        // sniExt: the transport-derived SNI candidate (host header / authority).
+        var sniExt: String? = null
 
-        if (security == "reality") {
-            putJsonObject("realitySettings") {
-                put("serverName", p.sni ?: "")
-                put("publicKey", p.publicKey ?: "")
-                put("shortId", p.shortId ?: "")
-                put("spiderX", p.spiderX ?: "")
-                put("fingerprint", p.fingerprint?.takeIf { it.isNotBlank() } ?: "chrome")
-                put("show", false)
-            }
-        }
-
-        when (p.network) {
+        when (network) {
             "ws" -> putJsonObject("wsSettings") {
                 put("path", p.path?.takeIf { it.isNotBlank() } ?: "/")
                 p.host?.takeIf { it.isNotBlank() }?.let {
                     putJsonObject("headers") { put("Host", it) }
                 }
+                sniExt = p.host
             }
 
-            "xhttp" -> putJsonObject("xhttpSettings") {
-                put("path", p.path?.takeIf { it.isNotBlank() } ?: "/")
-                p.host?.takeIf { it.isNotBlank() }?.let { put("host", it) }
-                put("mode", p.xhttpMode?.takeIf { it.isNotBlank() } ?: "auto")
-                p.xhttpExtra?.takeIf { it.isNotBlank() }?.let { extra ->
-                    runCatching { Json.parseToJsonElement(extra) }.getOrNull()?.let { el ->
-                        put("extra", el)
+            "xhttp" -> {
+                putJsonObject("xhttpSettings") {
+                    put("host", p.host.orEmpty())
+                    put("path", p.path?.takeIf { it.isNotBlank() } ?: "/")
+                    p.xhttpMode?.takeIf { it.isNotBlank() }?.let { put("mode", it) }
+                    p.xhttpExtra?.takeIf { it.isNotBlank() }?.let { extra ->
+                        parseExtra(extra)?.let { put("extra", it) }
                     }
                 }
+                sniExt = p.host
             }
 
             "grpc" -> putJsonObject("grpcSettings") {
                 put("serviceName", p.serviceName ?: "")
-                p.authority?.takeIf { it.isNotBlank() }?.let { put("authority", it) }
+                put("authority", p.authority ?: "")
                 put("multiMode", p.grpcMode == "multi")
+                put("idle_timeout", 60)
+                put("health_check_timeout", 20)
+                sniExt = p.authority
             }
 
-            "httpupgrade" -> putJsonObject("httpupgradeSettings") {
-                put("path", p.path?.takeIf { it.isNotBlank() } ?: "/")
-                p.host?.takeIf { it.isNotBlank() }?.let { put("host", it) }
+            "httpupgrade" -> {
+                putJsonObject("httpupgradeSettings") {
+                    put("host", p.host.orEmpty())
+                    put("path", p.path?.takeIf { it.isNotBlank() } ?: "/")
+                }
+                sniExt = p.host
             }
 
             "kcp" -> putJsonObject("kcpSettings") {
@@ -292,15 +321,18 @@ object ConfigBuilder {
                 p.seed?.takeIf { it.isNotBlank() }?.let { put("seed", it) }
             }
 
-            "h2", "http" -> putJsonObject("httpSettings") {
-                put("path", p.path?.takeIf { it.isNotBlank() } ?: "/")
-                p.host?.takeIf { it.isNotBlank() }?.let { host ->
-                    putJsonArray("host") { add(host) }
+            "h2", "http" -> {
+                put("network", "http")
+                putJsonObject("httpSettings") {
+                    put("path", p.path?.takeIf { it.isNotBlank() } ?: "/")
+                    val hosts = p.host.orEmpty().split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                    putJsonArray("host") { hosts.forEach { add(it) } }
+                    sniExt = hosts.firstOrNull()
                 }
             }
 
             else -> {
-                // plain tcp with optional http header obfuscation
+                // raw tcp, optionally with http header obfuscation
                 if (p.headerType == "http") {
                     putJsonObject("tcpSettings") {
                         putJsonObject("header") {
@@ -311,14 +343,68 @@ object ConfigBuilder {
                                 }
                                 putJsonObject("headers") {
                                     p.host?.takeIf { it.isNotBlank() }?.let { host ->
-                                        putJsonArray("Host") { add(host) }
+                                        putJsonArray("Host") { host.split(",").map { it.trim() }.forEach { add(it) } }
                                     }
                                 }
                             }
                         }
                     }
+                    sniExt = p.host?.split(",")?.firstOrNull()?.trim()
                 }
             }
         }
+
+        // Security (TLS / REALITY) — same settings object shape for both.
+        val security = p.security?.takeIf { it == "tls" || it == "reality" }
+        put("security", security ?: "none")
+        if (security != null) {
+            val sni = resolveSni(p, sniExt)
+            val securityObj = buildJsonObject {
+                sni?.takeIf { it.isNotBlank() }?.let { put("serverName", it) }
+                put("allowInsecure", p.allowInsecure)
+                val fp = p.fingerprint?.takeIf { it.isNotBlank() }
+                    ?: if (security == "reality") "chrome" else null
+                fp?.let { put("fingerprint", it) }
+                p.alpn?.takeIf { it.isNotBlank() }?.let { alpn ->
+                    putJsonArray("alpn") {
+                        alpn.split(",").map { it.trim() }.filter { it.isNotEmpty() }.forEach { add(it) }
+                    }
+                }
+                if (security == "reality") {
+                    p.publicKey?.takeIf { it.isNotBlank() }?.let { put("publicKey", it) }
+                    p.shortId?.let { put("shortId", it) }
+                    p.spiderX?.let { put("spiderX", it) }
+                }
+            }
+            if (security == "tls") {
+                put("tlsSettings", securityObj)
+            } else {
+                put("realitySettings", securityObj)
+            }
+        }
+    }
+
+    /**
+     * Final SNI: explicit sni param, else a domain-valued transport host, else
+     * the server if it is a domain, else the transport host. Mirrors v2rayNG.
+     */
+    private fun resolveSni(p: Profile, sniExt: String?): String? {
+        p.sni?.takeIf { it.isNotBlank() }?.let { return it }
+        if (!sniExt.isNullOrBlank() && isDomain(sniExt)) return sniExt
+        if (p.server.isNotBlank() && isDomain(p.server)) return p.server
+        return sniExt
+    }
+
+    private fun isDomain(value: String): Boolean {
+        val v = value.trim()
+        if (v.isEmpty()) return false
+        if (Utils.isIpAddress(v)) return false
+        return v.contains('.') && v.any { it.isLetter() }
+    }
+
+    private fun parseExtra(extra: String): JsonElement? = try {
+        json.parseToJsonElement(extra)
+    } catch (e: Exception) {
+        null
     }
 }

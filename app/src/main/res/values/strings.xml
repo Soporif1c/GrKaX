@@ -104,4 +104,29 @@
     <string name="error_vpn_permission">VPN permission not granted</string>
     <string name="error_tun_failed">Failed to establish the tunnel</string>
     <string name="error_core_failed">Core failed to start</string>
+
+    <!-- Universal servers screen -->
+    <string name="manual_group">Manual</string>
+
+    <!-- Subscription routing -->
+    <string name="sub_routing">Use subscription routing</string>
+    <string name="sub_routing_hint">Apply the routing rules shipped by the subscription (e.g. Remnawave) instead of the preset above</string>
+
+    <!-- Per-app proxy -->
+    <string name="per_app_title">Per-app proxy</string>
+    <string name="per_app_off">Off (all apps)</string>
+    <string name="per_app_bypass">Bypass selected</string>
+    <string name="per_app_only">Only selected</string>
+    <string name="per_app_off_hint">All apps go through the VPN.</string>
+    <string name="per_app_bypass_hint">Selected apps skip the VPN and connect directly.</string>
+    <string name="per_app_only_hint">Only selected apps go through the VPN; the rest connect directly.</string>
+    <string name="per_app_search">Search apps…</string>
+
+    <!-- Update check -->
+    <string name="check_update">Check for updates</string>
+    <string name="check_update_hint">Look for a newer release on GitHub</string>
+    <string name="check_update_checking">Checking…</string>
+    <string name="update_available">Update available: v%1$s — tap to open</string>
+    <string name="update_latest">You have the latest version</string>
+    <string name="update_check_failed">Check failed: %1$s</string>
 </resources>
