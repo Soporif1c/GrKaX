@@ -129,4 +129,13 @@
     <string name="update_available">Доступно обновление: v%1$s — нажмите, чтобы открыть</string>
     <string name="update_latest">У вас последняя версия</string>
     <string name="update_check_failed">Ошибка проверки: %1$s</string>
+
+    <!-- Logs -->
+    <string name="logs_open">Логи ядра</string>
+    <string name="logs_open_hint">Показать недавние логи для диагностики</string>
+    <string name="logs_title">Логи</string>
+    <string name="logs_refresh">Обновить</string>
+    <string name="logs_copy">Копировать</string>
+    <string name="logs_clear">Очистить</string>
+    <string name="logs_empty">Логов пока нет. Подключитесь и обновите.</string>
 </resources>

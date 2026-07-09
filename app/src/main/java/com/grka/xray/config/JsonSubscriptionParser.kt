@@ -120,6 +120,10 @@ object JsonSubscriptionParser {
 
         applyStreamSettings(p, outbound["streamSettings"] as? JsonObject)
 
+        // Preserve the exact outbound so non-standard transport fields (XHTTP
+        // obfuscation, extra, noSSEHeader, xmux, …) survive verbatim.
+        p.rawOutbound = outbound.toString()
+
         val tag = outbound["tag"]?.jsonPrimitive?.contentOrNull
         p.name = tag?.takeIf { it.isNotBlank() && it != "proxy" && it != "out" }
             ?: "${p.server}:${p.port}"

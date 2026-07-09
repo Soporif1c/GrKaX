@@ -246,6 +246,12 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 }
             }
+            ClickableRow(
+                title = stringResource(R.string.logs_open),
+                subtitle = stringResource(R.string.logs_open_hint),
+            ) {
+                context.startActivity(Intent(context, com.grka.xray.ui.LogActivity::class.java))
+            }
         }
 
         Spacer(Modifier.height(24.dp))

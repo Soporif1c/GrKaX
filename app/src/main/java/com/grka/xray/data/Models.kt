@@ -39,6 +39,11 @@ data class Profile(
     // meta
     var subId: String? = null,
     var rawLink: String? = null,
+    // Full outbound JSON when delivered by an xray-json subscription. Used
+    // verbatim so complex/non-standard transport fields (XHTTP obfuscation,
+    // extra, noSSEHeader, xmux, …) are preserved exactly instead of being
+    // lost in a flatten-and-rebuild round trip.
+    var rawOutbound: String? = null,
 ) {
     fun protoLabel(): String = when (protocol) {
         "vless" -> "VLESS"

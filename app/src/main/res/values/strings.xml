@@ -129,4 +129,13 @@
     <string name="update_available">Update available: v%1$s — tap to open</string>
     <string name="update_latest">You have the latest version</string>
     <string name="update_check_failed">Check failed: %1$s</string>
+
+    <!-- Logs -->
+    <string name="logs_open">Core logs</string>
+    <string name="logs_open_hint">View recent log output for diagnostics</string>
+    <string name="logs_title">Logs</string>
+    <string name="logs_refresh">Refresh</string>
+    <string name="logs_copy">Copy</string>
+    <string name="logs_clear">Clear</string>
+    <string name="logs_empty">No logs yet. Try connecting, then refresh.</string>
 </resources>
