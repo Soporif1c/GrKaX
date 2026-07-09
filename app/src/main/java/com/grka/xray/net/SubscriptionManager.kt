@@ -28,9 +28,13 @@ object SubscriptionManager {
 
     suspend fun update(context: Context, sub: Subscription): UpdateResult = withContext(Dispatchers.IO) {
         try {
+            // Some panels (Remnawave) return different formats per User-Agent;
+            // a custom UA lets the user request the xray-json (with routing).
+            val ua = sub.userAgent?.takeIf { it.isNotBlank() } ?: "GrKaX/${BuildConfig.VERSION_NAME}"
             val requestBuilder = Request.Builder()
                 .url(sub.url)
-                .header("User-Agent", "GrKaX/${BuildConfig.VERSION_NAME}")
+                .header("User-Agent", ua)
+                .header("Accept", "application/json, text/plain, */*")
             if (Store.hwidEnabled) {
                 // Device headers required by panels (e.g. Remnawave) that
                 // enforce a per-subscription device limit.
@@ -70,6 +74,7 @@ object SubscriptionManager {
                     p.subId = sub.id
                 }
                 sub.routingJson = routingJson
+                sub.rawBody = body.take(200_000) // keep for inspection (bounded)
                 Store.replaceSubscriptionProfiles(sub.id, profiles)
 
                 resp.header("subscription-userinfo")?.let { applyUserInfo(sub, it) }

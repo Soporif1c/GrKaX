@@ -3,6 +3,7 @@ package com.grka.xray.ui.screens
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -58,12 +59,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.grka.xray.R
+import com.grka.xray.config.ConfigBuilder
 import com.grka.xray.config.LinkParser
 import com.grka.xray.data.Profile
 import com.grka.xray.data.Store
 import com.grka.xray.data.Subscription
 import com.grka.xray.net.PingService
 import com.grka.xray.net.SubscriptionManager
+import com.grka.xray.ui.ConfigViewActivity
 import com.grka.xray.ui.toast
 import com.grka.xray.util.Utils
 import kotlinx.coroutines.launch
@@ -120,6 +123,14 @@ fun ServersScreen(
             if (result.ok) context.toast(context.getString(R.string.sub_updated, result.count))
             else context.toast(context.getString(R.string.sub_update_failed, result.error ?: ""))
         }
+    }
+
+    fun openConfig(title: String, content: String) {
+        context.startActivity(
+            Intent(context, ConfigViewActivity::class.java)
+                .putExtra(ConfigViewActivity.EXTRA_TITLE, title)
+                .putExtra(ConfigViewActivity.EXTRA_CONTENT, content)
+        )
     }
 
     // Group servers under their subscription, with manual/orphan servers last.
@@ -201,6 +212,11 @@ fun ServersScreen(
                                 onUpdate = { runUpdate(sub) },
                                 onEdit = { subDialog = sub },
                                 onDelete = { deleteSub = sub },
+                                onViewSource = {
+                                    val body = sub.rawBody
+                                    if (body.isNullOrBlank()) context.toast(context.getString(R.string.config_empty))
+                                    else openConfig(sub.name, body)
+                                },
                             )
                         }
                     } else if (list.isNotEmpty()) {
@@ -222,6 +238,16 @@ fun ServersScreen(
                                     cb.setPrimaryClip(ClipData.newPlainText("link", link))
                                     context.toast(context.getString(R.string.copied))
                                 }
+                            },
+                            onViewConfig = {
+                                val cfg = runCatching {
+                                    ConfigBuilder.build(
+                                        profile, Store.settingsSnapshot(), forTest = false,
+                                        routingJson = Store.routingTemplateFor(profile),
+                                        useSubRouting = Store.useSubscriptionRouting,
+                                    )
+                                }.getOrElse { it.message ?: "error" }
+                                openConfig(profile.name, cfg)
                             },
                             onDelete = { deleteProfile = profile },
                         )
@@ -322,8 +348,10 @@ private fun SubscriptionHeader(
     onUpdate: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onViewSource: () -> Unit,
 ) {
     val cs = MaterialTheme.colorScheme
+    var menuOpen by remember { mutableStateOf(false) }
     Card(
         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 4.dp),
         shape = RoundedCornerShape(18.dp),
@@ -343,8 +371,14 @@ private fun SubscriptionHeader(
                 } else {
                     IconButton(onClick = onUpdate) { Icon(Icons.Filled.Refresh, contentDescription = null, tint = cs.secondary) }
                 }
-                IconButton(onClick = onEdit) { Icon(Icons.Filled.Edit, contentDescription = null, tint = cs.onSurfaceVariant) }
-                IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, contentDescription = null, tint = cs.error) }
+                Box {
+                    IconButton(onClick = { menuOpen = true }) { Icon(Icons.Filled.MoreVert, contentDescription = null, tint = cs.onSurfaceVariant) }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.edit)) }, onClick = { menuOpen = false; onEdit() })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.view_source)) }, onClick = { menuOpen = false; onViewSource() })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.delete)) }, onClick = { menuOpen = false; onDelete() })
+                    }
+                }
             }
 
             if (sub.total > 0) {
@@ -373,6 +407,7 @@ private fun ServerCard(
     onPing: () -> Unit,
     onQr: () -> Unit,
     onCopy: () -> Unit,
+    onViewConfig: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val cs = MaterialTheme.colorScheme
@@ -423,6 +458,7 @@ private fun ServerCard(
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                     DropdownMenuItem(text = { Text(stringResource(R.string.show_qr)) }, onClick = { menuOpen = false; onQr() })
                     DropdownMenuItem(text = { Text(stringResource(R.string.copy_link)) }, onClick = { menuOpen = false; onCopy() })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.view_config)) }, onClick = { menuOpen = false; onViewConfig() })
                     DropdownMenuItem(text = { Text(stringResource(R.string.delete)) }, onClick = { menuOpen = false; onDelete() })
                 }
             }
@@ -439,6 +475,7 @@ private fun SubscriptionDialog(
 ) {
     var name by remember { mutableStateOf(initial.name) }
     var url by remember { mutableStateOf(initial.url) }
+    var ua by remember { mutableStateOf(initial.userAgent ?: "") }
     val context = LocalContext.current
 
     AlertDialog(
@@ -457,6 +494,19 @@ private fun SubscriptionDialog(
                     label = { Text(stringResource(R.string.sub_url)) }, placeholder = { Text("https://…") },
                     modifier = Modifier.fillMaxWidth(),
                 )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = ua, onValueChange = { ua = it },
+                    label = { Text(stringResource(R.string.sub_ua)) },
+                    placeholder = { Text("v2rayNG / Happ / Streisand…") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    stringResource(R.string.sub_ua_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         },
         confirmButton = {
@@ -464,7 +514,13 @@ private fun SubscriptionDialog(
                 if (url.isBlank() || !url.trim().startsWith("http")) {
                     context.toast(context.getString(R.string.sub_url_invalid))
                 } else {
-                    onSave(initial.copy(name = name.trim().ifEmpty { "Sub" }, url = url.trim()))
+                    onSave(
+                        initial.copy(
+                            name = name.trim().ifEmpty { "Sub" },
+                            url = url.trim(),
+                            userAgent = ua.trim().ifBlank { null },
+                        )
+                    )
                 }
             }) { Text(stringResource(R.string.save)) }
         },

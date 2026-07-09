@@ -44,6 +44,11 @@
             android:exported="false"
             android:configChanges="orientation|screenSize|keyboardHidden|uiMode" />
 
+        <activity
+            android:name=".ui.ConfigViewActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode" />
+
         <service
             android:name=".service.XVpnService"
             android:exported="false"

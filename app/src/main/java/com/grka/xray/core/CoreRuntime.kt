@@ -76,7 +76,10 @@ object CoreRuntime {
         init(context)
         return try {
             val routing = Store.routingTemplateFor(profile)
-            val config = ConfigBuilder.build(profile, Store.settingsSnapshot(), forTest = false, routingJson = routing)
+            val config = ConfigBuilder.build(
+                profile, Store.settingsSnapshot(), forTest = false,
+                routingJson = routing, useSubRouting = Store.useSubscriptionRouting,
+            )
             Log.d(AppConfig.TAG, "Core config: $config")
             controller.startLoop(config, 0)
             if (!controller.isRunning) {

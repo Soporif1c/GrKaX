@@ -46,17 +46,24 @@ object JsonSubscriptionParser {
         val profiles = mutableListOf<Profile>()
         var routing: String? = null
 
+        // The whole config is kept per profile so the panel's routing template
+        // (with its original outbound tags) can be applied verbatim.
         fun handleConfig(obj: JsonObject) {
             val outbounds = obj["outbounds"]?.let { it as? JsonArray } ?: return
             if (routing == null) {
                 obj["routing"]?.let { routing = it.toString() }
             }
+            val fullConfig = obj.toString()
             var idx = 0
             for (ob in outbounds) {
                 val outbound = ob as? JsonObject ?: continue
                 val proto = outbound["protocol"]?.jsonPrimitive?.contentOrNull
                 if (proto !in proxyProtocols) continue
-                outboundToProfile(outbound, idx)?.let { profiles.add(it); idx++ }
+                outboundToProfile(outbound, idx)?.let {
+                    it.fullConfig = fullConfig
+                    it.proxyTag = outbound["tag"]?.jsonPrimitive?.contentOrNull
+                    profiles.add(it); idx++
+                }
             }
         }
 

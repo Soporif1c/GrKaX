@@ -44,6 +44,12 @@ data class Profile(
     // extra, noSSEHeader, xmux, …) are preserved exactly instead of being
     // lost in a flatten-and-rebuild round trip.
     var rawOutbound: String? = null,
+    // The entire xray-json config object this profile's outbound belongs to
+    // (outbounds + routing + dns). Kept so the panel's routing template is
+    // applied with its original outbound tags intact.
+    var fullConfig: String? = null,
+    // Tag of this profile's proxy outbound inside [fullConfig].
+    var proxyTag: String? = null,
 ) {
     fun protoLabel(): String = when (protocol) {
         "vless" -> "VLESS"
@@ -81,4 +87,9 @@ data class Subscription(
     // Routing template shipped by an xray-json subscription (Remnawave). When
     // set, it replaces the app's routing preset for this sub's profiles.
     var routingJson: String? = null,
+    // Raw fetched subscription body, kept so the user can inspect it.
+    var rawBody: String? = null,
+    // Custom User-Agent for fetching (some panels serve different formats per
+    // UA; e.g. Remnawave returns xray-json with routing to certain clients).
+    var userAgent: String? = null,
 )

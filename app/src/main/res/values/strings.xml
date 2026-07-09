@@ -138,4 +138,14 @@
     <string name="logs_copy">Copy</string>
     <string name="logs_clear">Clear</string>
     <string name="logs_empty">No logs yet. Try connecting, then refresh.</string>
+
+    <!-- Config viewer -->
+    <string name="edit">Edit</string>
+    <string name="view_config">View config</string>
+    <string name="view_source">View source</string>
+    <string name="config_empty">Nothing to show. Update the subscription first.</string>
+
+    <!-- Subscription User-Agent -->
+    <string name="sub_ua">User-Agent (optional)</string>
+    <string name="sub_ua_hint">Some panels serve different formats per client. To get the routing template from Remnawave, set this to a client it recognizes (e.g. v2rayNG). Leave empty for default.</string>
 </resources>

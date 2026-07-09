@@ -138,4 +138,14 @@
     <string name="logs_copy">Копировать</string>
     <string name="logs_clear">Очистить</string>
     <string name="logs_empty">Логов пока нет. Подключитесь и обновите.</string>
+
+    <!-- Config viewer -->
+    <string name="edit">Изменить</string>
+    <string name="view_config">Показать конфиг</string>
+    <string name="view_source">Показать источник</string>
+    <string name="config_empty">Нечего показать. Сначала обновите подписку.</string>
+
+    <!-- Subscription User-Agent -->
+    <string name="sub_ua">User-Agent (необязательно)</string>
+    <string name="sub_ua_hint">Некоторые панели отдают разный формат разным клиентам. Чтобы получить шаблон роутинга из Remnawave, укажите узнаваемый клиент (например, v2rayNG). Пусто — значение по умолчанию.</string>
 </resources>

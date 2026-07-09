@@ -5,12 +5,15 @@ import com.grka.xray.data.Profile
 import com.grka.xray.data.SettingsSnapshot
 import com.grka.xray.util.Utils
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
@@ -27,15 +30,31 @@ object ConfigBuilder {
     private val json = Json { ignoreUnknownKeys = true }
 
     /**
-     * @param routingJson optional routing template (e.g. from a Remnawave
-     *   subscription). When present it replaces the generated routing block.
+     * @param routingJson optional routing template (legacy path, e.g. from a
+     *   Remnawave subscription) when the profile has no [Profile.fullConfig].
+     * @param useSubRouting keep the subscription config's own routing/dns
+     *   (with original outbound tags) instead of the app's preset.
      */
     fun build(
         profile: Profile,
         s: SettingsSnapshot,
         forTest: Boolean,
         routingJson: String? = null,
+        useSubRouting: Boolean = true,
     ): String {
+        // Preferred path: the profile carries the whole xray-json config, so we
+        // keep its outbounds (original tags) + routing + dns and only swap in
+        // our socks inbound. This makes the panel's routing template work.
+        // Only when subscription routing is enabled — otherwise the app preset
+        // (which references our proxy/direct/block tags) is used via the flat
+        // path below.
+        if (useSubRouting) {
+            profile.fullConfig?.takeIf { it.isNotBlank() }?.let { full ->
+                runCatching { buildFromFullConfig(full, profile, s, forTest) }
+                    .getOrNull()?.let { return it }
+            }
+        }
+
         val routingOverride = parseRouting(routingJson)
 
         val root = buildJsonObject {
@@ -129,6 +148,89 @@ object ConfigBuilder {
             }
         }
         return root.toString()
+    }
+
+    // ---------------- full-config (xray-json subscription) path ----------------
+
+    private fun buildFromFullConfig(
+        full: String,
+        p: Profile,
+        s: SettingsSnapshot,
+        forTest: Boolean,
+    ): String {
+        val cfg = json.parseToJsonElement(full).jsonObject
+        val outbounds = (cfg["outbounds"] as? JsonArray) ?: JsonArray(emptyList())
+        val reordered = reorderOutbounds(outbounds, p.proxyTag)
+
+        val root = buildJsonObject {
+            putJsonObject("log") { put("loglevel", if (forTest) "none" else s.logLevel) }
+
+            if (!forTest) {
+                putJsonObject("stats") {}
+                put("dns", ensureDns(cfg["dns"] as? JsonObject, s))
+                putJsonArray("inbounds") { add(socksInbound(s)) }
+            }
+
+            put("outbounds", reordered)
+
+            if (!forTest) {
+                val routing = cfg["routing"] as? JsonObject
+                put("routing", routing ?: buildRouting(s))
+            }
+        }
+        return root.toString()
+    }
+
+    /** Moves this profile's proxy outbound to the front (routing default) and
+     *  normalizes legacy XHTTP keys in every outbound. */
+    private fun reorderOutbounds(outbounds: JsonArray, proxyTag: String?): JsonArray {
+        val list = outbounds.mapNotNull { it as? JsonObject }.map { normalizeOutbound(it) }
+        if (proxyTag.isNullOrBlank()) return JsonArray(list)
+        val idx = list.indexOfFirst { it["tag"]?.jsonPrimitive?.contentOrNull == proxyTag }
+        if (idx <= 0) return JsonArray(list)
+        val out = ArrayList<JsonObject>(list.size)
+        out.add(list[idx])
+        list.forEachIndexed { i, o -> if (i != idx) out.add(o) }
+        return JsonArray(out)
+    }
+
+    private fun normalizeOutbound(ob: JsonObject): JsonObject = buildJsonObject {
+        for ((k, v) in ob) {
+            if (k == "streamSettings" && v is JsonObject) put("streamSettings", normalizeStream(v))
+            else put(k, v)
+        }
+    }
+
+    /** Keeps the template DNS but guarantees at least one resolver. */
+    private fun ensureDns(dns: JsonObject?, s: SettingsSnapshot): JsonObject {
+        if (dns == null) {
+            return buildJsonObject { putJsonArray("servers") { add(s.remoteDns) } }
+        }
+        val servers = dns["servers"] as? JsonArray
+        if (servers != null && servers.isNotEmpty()) return dns
+        return buildJsonObject {
+            for ((k, v) in dns) if (k != "servers") put(k, v)
+            putJsonArray("servers") { add(s.remoteDns) }
+        }
+    }
+
+    private fun socksInbound(s: SettingsSnapshot): JsonObject = buildJsonObject {
+        put("tag", "socks")
+        put("listen", AppConfig.LOOPBACK)
+        put("port", s.socksPort)
+        put("protocol", "socks")
+        putJsonObject("settings") {
+            put("auth", "noauth")
+            put("udp", true)
+            put("userLevel", 8)
+        }
+        putJsonObject("sniffing") {
+            put("enabled", s.sniffing)
+            putJsonArray("destOverride") {
+                add("http"); add("tls"); add("quic")
+            }
+            put("routeOnly", s.routeOnly)
+        }
     }
 
     // ---------------- routing ----------------
