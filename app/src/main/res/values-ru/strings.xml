@@ -166,5 +166,5 @@
 
     <!-- Subscription User-Agent -->
     <string name="sub_ua">User-Agent (необязательно)</string>
-    <string name="sub_ua_hint">Remnawave отдаёт xray-json (с вашим роутингом) только узнаваемым клиентам. Если у вас работает Happ — впишите сюда Happ и обновите подписку: приложение пошлёт подходящие заголовки. Пусто — значение по умолчанию.</string>
+    <string name="sub_ua_hint">По умолчанию приложение представляется как Happ — панели вроде Remnawave отдают xray-json с вашим роутингом. Меняйте, только если ваша панель ждёт другой клиент; пусто — по умолчанию Happ.</string>
 </resources>

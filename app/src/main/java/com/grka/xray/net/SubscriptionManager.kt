@@ -35,7 +35,9 @@ object SubscriptionManager {
             // panel's "user-agent contains happ" rule matches reliably.
             val uaRaw = sub.userAgent?.takeIf { it.isNotBlank() }
             val ua = when {
-                uaRaw == null -> "GrKaX/${BuildConfig.VERSION_NAME}"
+                // Default to Happ: most panels (Remnawave) then return the
+                // xray-json config with the routing template out of the box.
+                uaRaw == null -> "Happ/3.13.0"
                 uaRaw.contains("happ", ignoreCase = true) && !uaRaw.contains("/") -> "Happ/3.13.0"
                 else -> uaRaw
             }

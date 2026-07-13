@@ -166,5 +166,5 @@
 
     <!-- Subscription User-Agent -->
     <string name="sub_ua">User-Agent (optional)</string>
-    <string name="sub_ua_hint">Remnawave returns the xray-json config (with your routing) only to recognized clients. If Happ works for you, type Happ here and update — the app sends the matching headers. Leave empty for default.</string>
+    <string name="sub_ua_hint">By default the app identifies as Happ, so panels like Remnawave return the xray-json config with your routing. Change this only if your panel expects a different client; leave empty for the Happ default.</string>
 </resources>
