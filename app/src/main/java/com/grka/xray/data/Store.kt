@@ -263,7 +263,7 @@ object Store {
         set(v) { settingsKv.encode("config_template", v) }
 
     var hideNotification: Boolean
-        get() = bool("hide_notification", false)
+        get() = bool("hide_notification", true)
         set(v) { settingsKv.encode("hide_notification", v) }
 
     var geoAssetsVersion: Int
