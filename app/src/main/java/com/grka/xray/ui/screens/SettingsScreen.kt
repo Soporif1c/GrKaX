@@ -24,6 +24,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -32,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -70,15 +72,20 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     var hwid by remember { mutableStateOf(Store.hwidEnabled) }
     var autoStart by remember { mutableStateOf(Store.autoStart) }
     var subRouting by remember { mutableStateOf(Store.useSubscriptionRouting) }
+    var hideNotif by remember { mutableStateOf(Store.hideNotification) }
     var perAppMode by remember { mutableStateOf(Store.perAppMode) }
     var remoteDns by remember { mutableStateOf(Store.remoteDns) }
     var dnsDialog by remember { mutableStateOf(false) }
+    var templateDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var checkingUpdate by remember { mutableStateOf(false) }
     var updateStatus by remember { mutableStateOf<String?>(null) }
     var updateUrl by remember { mutableStateOf<String?>(null) }
+    var updateApkUrl by remember { mutableStateOf<String?>(null) }
+    var downloading by remember { mutableStateOf(false) }
+    var downloadProgress by remember { mutableFloatStateOf(0f) }
 
     Column(
         modifier = modifier
@@ -199,6 +206,17 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 subtitle = stringResource(R.string.sub_routing_hint),
                 checked = subRouting,
             ) { subRouting = it; Store.useSubscriptionRouting = it }
+            ClickableRow(
+                title = stringResource(R.string.config_template),
+                subtitle = if (Store.configTemplate.isBlank())
+                    stringResource(R.string.config_template_hint)
+                else stringResource(R.string.config_template_set),
+            ) { templateDialog = true }
+            SwitchRow(
+                title = stringResource(R.string.hide_notification),
+                subtitle = stringResource(R.string.hide_notification_hint),
+                checked = hideNotif,
+            ) { hideNotif = it; Store.hideNotification = it }
         }
 
         // ---- About ----
@@ -212,28 +230,45 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 title = stringResource(R.string.check_update),
                 subtitle = statusText ?: stringResource(R.string.check_update_hint),
             ) {
-                val url = updateUrl
-                if (url != null) {
-                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+                if (checkingUpdate || downloading) return@ClickableRow
+                val apk = updateApkUrl
+                if (apk != null) {
+                    // An update was found — download and launch the installer.
+                    // The apk URL is kept, so a failed tap simply retries.
+                    downloading = true
+                    downloadProgress = 0f
+                    updateStatus = context.getString(R.string.update_downloading)
+                    scope.launch {
+                        val file = UpdateChecker.downloadApk(context, apk) { p -> downloadProgress = p }
+                        downloading = false
+                        if (file != null) {
+                            updateStatus = context.getString(R.string.update_installing)
+                            runCatching { UpdateChecker.installApk(context, file) }
+                                .onFailure {
+                                    updateUrl?.let { u -> runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(u))) } }
+                                }
+                        } else {
+                            updateStatus = context.getString(R.string.update_download_failed)
+                        }
+                    }
                     return@ClickableRow
                 }
-                if (checkingUpdate) return@ClickableRow
                 checkingUpdate = true
                 updateStatus = context.getString(R.string.check_update_checking)
                 scope.launch {
                     when (val r = UpdateChecker.check()) {
                         is UpdateChecker.Result.Success -> {
+                            updateUrl = r.info.htmlUrl
                             if (r.info.isNewer) {
                                 updateStatus = context.getString(R.string.update_available, r.info.latestVersion)
-                                updateUrl = r.info.htmlUrl
+                                updateApkUrl = r.info.apkUrl
                             } else {
                                 updateStatus = context.getString(R.string.update_latest)
                             }
                         }
 
-                        is UpdateChecker.Result.Error -> {
+                        is UpdateChecker.Result.Error ->
                             updateStatus = context.getString(R.string.update_check_failed, r.message)
-                        }
                     }
                     checkingUpdate = false
                 }
@@ -245,6 +280,12 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 }
+            }
+            if (downloading) {
+                LinearProgressIndicator(
+                    progress = { downloadProgress },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                )
             }
             ClickableRow(
                 title = stringResource(R.string.logs_open),
@@ -279,6 +320,44 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             },
             dismissButton = {
                 TextButton(onClick = { dnsDialog = false }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
+
+    if (templateDialog) {
+        var value by remember { mutableStateOf(Store.configTemplate) }
+        AlertDialog(
+            onDismissRequest = { templateDialog = false },
+            title = { Text(stringResource(R.string.config_template)) },
+            text = {
+                Column {
+                    Text(
+                        stringResource(R.string.config_template_dialog_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = cs.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = value,
+                        onValueChange = { value = it },
+                        placeholder = { Text("{ \"routing\": { … }, \"dns\": { … } }") },
+                        minLines = 5,
+                        maxLines = 12,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    Store.configTemplate = value.trim()
+                    templateDialog = false
+                }) { Text(stringResource(R.string.save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    Store.configTemplate = ""
+                    templateDialog = false
+                }) { Text(stringResource(R.string.clear)) }
             },
         )
     }

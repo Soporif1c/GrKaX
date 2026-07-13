@@ -3,11 +3,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Soporif1c/GrKaX/releases/latest"><img src="https://img.shields.io/github/v/release/Soporif1c/GrKaX?style=flat-square&color=8B7CFF&label=версия" alt="Release"></a>
-  <a href="https://github.com/Soporif1c/GrKaX/releases"><img src="https://img.shields.io/github/downloads/Soporif1c/GrKaX/total?style=flat-square&color=22D3EE&label=загрузки" alt="Downloads"></a>
+  <a href="https://github.com/Soporif1c/GrKaX/releases/latest"><img src="https://img.shields.io/github/v/release/Soporif1c/GrKaX?include_prereleases&sort=semver&style=flat-square&color=8B7CFF&label=release" alt="Release"></a>
+  <a href="https://github.com/Soporif1c/GrKaX/releases"><img src="https://img.shields.io/github/downloads/Soporif1c/GrKaX/total?style=flat-square&color=22D3EE&label=downloads" alt="Downloads"></a>
   <img src="https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white" alt="Android 8+">
-  <img src="https://img.shields.io/badge/ядро-Xray-F471B5?style=flat-square" alt="Xray core">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/лицензия-GPL--3.0-A6ADCE?style=flat-square" alt="License"></a>
+  <img src="https://img.shields.io/badge/core-Xray-F471B5?style=flat-square" alt="Xray core">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-A6ADCE?style=flat-square" alt="License"></a>
 </p>
 
 <p align="center">

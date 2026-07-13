@@ -41,21 +41,25 @@ object ConfigBuilder {
         forTest: Boolean,
         routingJson: String? = null,
         useSubRouting: Boolean = true,
+        customTemplate: String? = null,
     ): String {
+        // A user-pasted template's routing/dns take top priority — this is how a
+        // panel's routing gets applied even when the subscription arrives as
+        // plain share links (which carry no routing/dns).
+        val tplRouting = extractFromTemplate(customTemplate, "routing")
+        val tplDns = extractFromTemplate(customTemplate, "dns")
+
         // Preferred path: the profile carries the whole xray-json config, so we
         // keep its outbounds (original tags) + routing + dns and only swap in
         // our socks inbound. This makes the panel's routing template work.
-        // Only when subscription routing is enabled — otherwise the app preset
-        // (which references our proxy/direct/block tags) is used via the flat
-        // path below.
         if (useSubRouting) {
             profile.fullConfig?.takeIf { it.isNotBlank() }?.let { full ->
-                runCatching { buildFromFullConfig(full, profile, s, forTest) }
+                runCatching { buildFromFullConfig(full, profile, s, forTest, tplRouting, tplDns) }
                     .getOrNull()?.let { return it }
             }
         }
 
-        val routingOverride = parseRouting(routingJson)
+        val routingOverride = tplRouting ?: parseRouting(routingJson)
 
         val root = buildJsonObject {
             putJsonObject("log") {
@@ -77,18 +81,22 @@ object ConfigBuilder {
                     }
                 }
 
-                putJsonObject("dns") {
-                    putJsonObject("hosts") {
-                        put("domain:googleapis.cn", "googleapis.com")
-                    }
-                    putJsonArray("servers") {
-                        add(s.remoteDns)
-                        if (s.routingPreset == AppConfig.ROUTE_BYPASS_RU) {
-                            addJsonObject {
-                                put("address", s.directDns)
-                                put("port", 53)
-                                putJsonArray("domains") {
-                                    add("geosite:category-ru")
+                if (tplDns != null) {
+                    put("dns", ensureDns(tplDns, s))
+                } else {
+                    putJsonObject("dns") {
+                        putJsonObject("hosts") {
+                            put("domain:googleapis.cn", "googleapis.com")
+                        }
+                        putJsonArray("servers") {
+                            add(s.remoteDns)
+                            if (s.routingPreset == AppConfig.ROUTE_BYPASS_RU) {
+                                addJsonObject {
+                                    put("address", s.directDns)
+                                    put("port", 53)
+                                    putJsonArray("domains") {
+                                        add("geosite:category-ru")
+                                    }
                                 }
                             }
                         }
@@ -157,6 +165,8 @@ object ConfigBuilder {
         p: Profile,
         s: SettingsSnapshot,
         forTest: Boolean,
+        tplRouting: JsonObject? = null,
+        tplDns: JsonObject? = null,
     ): String {
         val cfg = json.parseToJsonElement(full).jsonObject
         val outbounds = (cfg["outbounds"] as? JsonArray) ?: JsonArray(emptyList())
@@ -174,18 +184,34 @@ object ConfigBuilder {
                         put("statsOutboundDownlink", true)
                     }
                 }
-                put("dns", ensureDns(cfg["dns"] as? JsonObject, s))
+                put("dns", ensureDns(tplDns ?: cfg["dns"] as? JsonObject, s))
                 putJsonArray("inbounds") { add(socksInbound(s)) }
             }
 
             put("outbounds", reordered)
 
             if (!forTest) {
-                val routing = cfg["routing"] as? JsonObject
+                val routing = tplRouting ?: cfg["routing"] as? JsonObject
                 put("routing", routing ?: buildRouting(s))
             }
         }
         return root.toString()
+    }
+
+    /** Pulls a top-level object (routing/dns) out of a user-pasted template.
+     *  Accepts a full config, or a bare routing object when key == "routing". */
+    private fun extractFromTemplate(template: String?, key: String): JsonObject? {
+        val raw = template?.takeIf { it.isNotBlank() } ?: return null
+        return try {
+            val obj = json.parseToJsonElement(raw).jsonObject
+            when {
+                obj[key] is JsonObject -> obj[key] as JsonObject
+                key == "routing" && obj.containsKey("rules") -> obj
+                else -> null
+            }
+        } catch (e: Exception) {
+            null
+        }
     }
 
     private val proxyProtocols = setOf("vless", "vmess", "trojan", "shadowsocks")

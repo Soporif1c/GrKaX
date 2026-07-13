@@ -255,6 +255,17 @@ object Store {
         get() = bool("use_sub_routing", true)
         set(v) { settingsKv.encode("use_sub_routing", v) }
 
+    /** User-pasted xray-json (or a bare routing/dns object) used as a config
+     *  template — its routing and dns override the preset. Lets users apply a
+     *  panel's routing even when the subscription is delivered as plain links. */
+    var configTemplate: String
+        get() = str("config_template", "")
+        set(v) { settingsKv.encode("config_template", v) }
+
+    var hideNotification: Boolean
+        get() = bool("hide_notification", false)
+        set(v) { settingsKv.encode("hide_notification", v) }
+
     var geoAssetsVersion: Int
         get() = int("geo_assets_version", 0)
         set(v) { settingsKv.encode("geo_assets_version", v) }

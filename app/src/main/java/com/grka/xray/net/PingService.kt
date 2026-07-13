@@ -56,6 +56,7 @@ object PingService {
     private fun measure(profile: Profile, settings: com.grka.xray.data.SettingsSnapshot): Long = try {
         val config = ConfigBuilder.build(
             profile, settings, forTest = true, useSubRouting = Store.useSubscriptionRouting,
+            customTemplate = Store.configTemplate,
         )
         Libv2ray.measureOutboundDelay(config, AppConfig.DELAY_TEST_URL)
     } catch (e: Exception) {

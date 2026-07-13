@@ -42,11 +42,13 @@ fun MainScreen(
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
 
-    // Selecting another server while connected restarts the tunnel on it
+    // Selecting a server switches to it, returns to Home, and — if a tunnel is
+    // already up — restarts it on the new server.
     val switchProfile: (String) -> Unit = { id ->
         val wasActive = CoreRuntime.state.value == ConnState.CONNECTED ||
                 CoreRuntime.state.value == ConnState.CONNECTING
         Store.selectProfile(id)
+        tab = 0
         if (wasActive) {
             onDisconnect()
             scope.launch {

@@ -126,9 +126,26 @@
     <string name="check_update">Проверить обновления</string>
     <string name="check_update_hint">Искать новую версию на GitHub</string>
     <string name="check_update_checking">Проверка…</string>
-    <string name="update_available">Доступно обновление: v%1$s — нажмите, чтобы открыть</string>
+    <string name="update_available">Доступно обновление: v%1$s — нажмите, чтобы установить</string>
     <string name="update_latest">У вас последняя версия</string>
     <string name="update_check_failed">Ошибка проверки: %1$s</string>
+    <string name="update_downloading">Загрузка обновления…</string>
+    <string name="update_installing">Открываю установщик…</string>
+    <string name="update_download_failed">Не удалось скачать — нажмите, чтобы открыть страницу</string>
+    <string name="update_open_page">Нажмите, чтобы открыть страницу загрузки</string>
+
+    <!-- Config template -->
+    <string name="config_template">Шаблон конфига (JSON)</string>
+    <string name="config_template_hint">Вставьте routing/DNS из вашей панели</string>
+    <string name="config_template_set">Шаблон задан — нажмите, чтобы изменить</string>
+    <string name="config_template_dialog_hint">Вставьте xray-json конфиг (или просто блок routing/dns) из вашей панели. Его правила маршрутизации и DNS будут применены — удобно, когда подписка приходит обычными ссылками без роутинга.</string>
+
+    <!-- Hide notification -->
+    <string name="hide_notification">Скрыть уведомление</string>
+    <string name="hide_notification_hint">Свернуть уведомление VPN (без значка в статус-баре). Android оставляет минимальную строку в шторке, пока идёт подключение.</string>
+    <string name="notification_channel_min">Статус VPN (свёрнуто)</string>
+
+    <string name="clear">Очистить</string>
 
     <!-- Logs -->
     <string name="logs_open">Логи ядра</string>

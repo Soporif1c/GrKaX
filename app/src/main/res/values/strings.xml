@@ -126,9 +126,26 @@
     <string name="check_update">Check for updates</string>
     <string name="check_update_hint">Look for a newer release on GitHub</string>
     <string name="check_update_checking">Checking…</string>
-    <string name="update_available">Update available: v%1$s — tap to open</string>
+    <string name="update_available">Update available: v%1$s — tap to install</string>
     <string name="update_latest">You have the latest version</string>
     <string name="update_check_failed">Check failed: %1$s</string>
+    <string name="update_downloading">Downloading update…</string>
+    <string name="update_installing">Opening installer…</string>
+    <string name="update_download_failed">Download failed — tap to open the page</string>
+    <string name="update_open_page">Tap to open the download page</string>
+
+    <!-- Config template -->
+    <string name="config_template">Config template (JSON)</string>
+    <string name="config_template_hint">Paste your panel\'s routing/DNS to apply it</string>
+    <string name="config_template_set">Custom template is set — tap to edit</string>
+    <string name="config_template_dialog_hint">Paste an xray-json config (or just a routing/dns block) from your panel. Its routing and DNS will be applied — useful when the subscription arrives as plain links without routing.</string>
+
+    <!-- Hide notification -->
+    <string name="hide_notification">Hide notification</string>
+    <string name="hide_notification_hint">Minimize the VPN notification (no status-bar icon). Android keeps a minimal entry in the shade while connected.</string>
+    <string name="notification_channel_min">VPN status (minimized)</string>
+
+    <string name="clear">Clear</string>
 
     <!-- Logs -->
     <string name="logs_open">Core logs</string>

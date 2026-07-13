@@ -245,6 +245,7 @@ fun ServersScreen(
                                         profile, Store.settingsSnapshot(), forTest = false,
                                         routingJson = Store.routingTemplateFor(profile),
                                         useSubRouting = Store.useSubscriptionRouting,
+                                        customTemplate = Store.configTemplate,
                                     )
                                 }.getOrElse { it.message ?: "error" }
                                 openConfig(profile.name, cfg)

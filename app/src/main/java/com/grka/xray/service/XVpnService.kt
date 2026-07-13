@@ -32,6 +32,7 @@ class XVpnService : VpnService() {
         const val ACTION_STOP = "com.grka.xray.action.STOP"
         const val NOTIFICATION_ID = 1
         const val CHANNEL_ID = "vpn_state"
+        const val CHANNEL_ID_MIN = "vpn_state_min"
     }
 
     private var tunFd: ParcelFileDescriptor? = null
@@ -271,17 +272,26 @@ class XVpnService : VpnService() {
     // ---------------- notification ----------------
 
     private fun createNotificationChannel() {
-        val channel = NotificationChannel(
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val normal = NotificationChannel(
             CHANNEL_ID,
             getString(R.string.notification_channel),
             NotificationManager.IMPORTANCE_LOW
-        )
-        channel.setShowBadge(false)
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.createNotificationChannel(channel)
+        ).apply { setShowBadge(false) }
+        // A separate min-importance channel: no status-bar icon, collapsed in the
+        // shade. Used when the user enables "hide notification".
+        val min = NotificationChannel(
+            CHANNEL_ID_MIN,
+            getString(R.string.notification_channel_min),
+            NotificationManager.IMPORTANCE_MIN
+        ).apply { setShowBadge(false) }
+        manager.createNotificationChannel(normal)
+        manager.createNotificationChannel(min)
     }
 
     private fun buildNotification(text: String): Notification {
+        val hidden = Store.hideNotification
+        val channel = if (hidden) CHANNEL_ID_MIN else CHANNEL_ID
         val openIntent = packageManager.getLaunchIntentForPackage(packageName)
         val contentPendingIntent = if (openIntent != null) {
             PendingIntent.getActivity(
@@ -296,12 +306,13 @@ class XVpnService : VpnService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        return NotificationCompat.Builder(this, channel)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(text)
             .setOngoing(true)
             .setSilent(true)
+            .setPriority(if (hidden) NotificationCompat.PRIORITY_MIN else NotificationCompat.PRIORITY_LOW)
             .setContentIntent(contentPendingIntent)
             .addAction(0, getString(R.string.action_stop), stopPendingIntent)
             .build()
