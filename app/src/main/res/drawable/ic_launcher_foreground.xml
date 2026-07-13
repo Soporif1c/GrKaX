@@ -3,14 +3,14 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- "Aegis": shield with a lightning bolt cut out. Content sits inside the
-         72dp adaptive-icon safe zone (18..90), centered on x=54. -->
+    <!-- "Aegis": shield + lightning, centered on (54,54) and kept inside the
+         circular adaptive-icon safe zone (radius ~33 from center). -->
     <path
-        android:pathData="M54,28 L79,38 V59 C79,77 67,89 54,93 C41,89 29,77 29,59 V38 Z">
+        android:pathData="M28,27 H80 V55 C80,70 69,80 54,85 C39,80 28,70 28,55 Z">
         <aapt:attr name="android:fillColor" xmlns:aapt="http://schemas.android.com/aapt">
             <gradient
-                android:startX="29" android:startY="28"
-                android:endX="79" android:endY="93"
+                android:startX="28" android:startY="27"
+                android:endX="80" android:endY="85"
                 android:type="linear">
                 <item android:offset="0" android:color="#FF8B7CFF" />
                 <item android:offset="1" android:color="#FF22D3EE" />
@@ -20,5 +20,5 @@
     <!-- Lightning bolt negative space -->
     <path
         android:fillColor="#FF0B1020"
-        android:pathData="M59,43 L44,64 L52.5,64 L49,79 L65,56 L56.5,56 L60,43 Z" />
+        android:pathData="M56,37 L44,59 L52,59 L48,73 L64,51 L56,51 Z" />
 </vector>

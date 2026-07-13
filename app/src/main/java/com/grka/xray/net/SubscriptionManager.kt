@@ -35,12 +35,15 @@ object SubscriptionManager {
                 .url(sub.url)
                 .header("User-Agent", ua)
                 .header("Accept", "application/json, text/plain, */*")
+                // Sent always: Remnawave "Response Rules" match on x-device-os
+                // (e.g. UA contains "happ" AND x-device-os contains "android")
+                // to decide whether to return xray-json with the routing template.
+                .header("x-device-os", "Android")
+                .header("x-ver-os", Build.VERSION.RELEASE ?: "")
             if (Store.hwidEnabled) {
-                // Device headers required by panels (e.g. Remnawave) that
-                // enforce a per-subscription device limit.
+                // Unique device id — required by panels enforcing a per-sub
+                // device limit; kept behind the toggle for privacy.
                 requestBuilder.header("x-hwid", Utils.hwid(context))
-                requestBuilder.header("x-device-os", "Android")
-                requestBuilder.header("x-ver-os", Build.VERSION.RELEASE ?: "")
                 requestBuilder.header("x-device-model", Build.MODEL ?: "")
             }
 

@@ -43,6 +43,8 @@
     <string name="import_empty">Clipboard is empty</string>
     <string name="import_none">No valid links found</string>
     <string name="import_ok">Imported %1$d server(s)</string>
+    <string name="import_sub_added">Subscription added — %1$d server(s)</string>
+    <string name="import_sub_saved">Subscription added — tap update to load it</string>
 
     <!-- Subscriptions -->
     <string name="update_all">Update all</string>
@@ -164,5 +166,5 @@
 
     <!-- Subscription User-Agent -->
     <string name="sub_ua">User-Agent (optional)</string>
-    <string name="sub_ua_hint">Some panels serve different formats per client. To get the routing template from Remnawave, set this to a client it recognizes (e.g. v2rayNG). Leave empty for default.</string>
+    <string name="sub_ua_hint">Remnawave returns the xray-json config (with your routing) only to recognized clients. If Happ works for you, type Happ here and update — the app sends the matching headers. Leave empty for default.</string>
 </resources>

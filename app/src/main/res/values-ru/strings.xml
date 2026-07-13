@@ -43,6 +43,8 @@
     <string name="import_empty">Буфер обмена пуст</string>
     <string name="import_none">Не найдено ни одной ссылки</string>
     <string name="import_ok">Импортировано серверов: %1$d</string>
+    <string name="import_sub_added">Подписка добавлена — серверов: %1$d</string>
+    <string name="import_sub_saved">Подписка добавлена — нажмите обновить</string>
 
     <!-- Subscriptions -->
     <string name="update_all">Обновить все</string>
@@ -164,5 +166,5 @@
 
     <!-- Subscription User-Agent -->
     <string name="sub_ua">User-Agent (необязательно)</string>
-    <string name="sub_ua_hint">Некоторые панели отдают разный формат разным клиентам. Чтобы получить шаблон роутинга из Remnawave, укажите узнаваемый клиент (например, v2rayNG). Пусто — значение по умолчанию.</string>
+    <string name="sub_ua_hint">Remnawave отдаёт xray-json (с вашим роутингом) только узнаваемым клиентам. Если у вас работает Happ — впишите сюда Happ и обновите подписку: приложение пошлёт подходящие заголовки. Пусто — значение по умолчанию.</string>
 </resources>
