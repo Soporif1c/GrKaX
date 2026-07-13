@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 object SubscriptionManager {
@@ -28,23 +29,31 @@ object SubscriptionManager {
 
     suspend fun update(context: Context, sub: Subscription): UpdateResult = withContext(Dispatchers.IO) {
         try {
-            // Some panels (Remnawave) return different formats per User-Agent;
-            // a custom UA lets the user request the xray-json (with routing).
-            val ua = sub.userAgent?.takeIf { it.isNotBlank() } ?: "GrKaX/${BuildConfig.VERSION_NAME}"
+            // Some panels (Remnawave) return different formats per client. A
+            // custom UA (e.g. "Happ") lets the user request the xray-json with
+            // routing. A bare "Happ" is expanded to a realistic Happ UA so the
+            // panel's "user-agent contains happ" rule matches reliably.
+            val uaRaw = sub.userAgent?.takeIf { it.isNotBlank() }
+            val ua = when {
+                uaRaw == null -> "GrKaX/${BuildConfig.VERSION_NAME}"
+                uaRaw.contains("happ", ignoreCase = true) && !uaRaw.contains("/") -> "Happ/3.13.0"
+                else -> uaRaw
+            }
             val requestBuilder = Request.Builder()
                 .url(sub.url)
                 .header("User-Agent", ua)
                 .header("Accept", "application/json, text/plain, */*")
-                // Sent always: Remnawave "Response Rules" match on x-device-os
-                // (e.g. UA contains "happ" AND x-device-os contains "android")
-                // to decide whether to return xray-json with the routing template.
+                // Device headers, matching what Happ sends. Remnawave "Response
+                // Rules" match on these (e.g. UA contains "happ" AND x-device-os
+                // contains "android") to return xray-json with the routing template.
                 .header("x-device-os", "Android")
                 .header("x-ver-os", Build.VERSION.RELEASE ?: "")
+                .header("x-device-model", Build.MODEL ?: "")
+                .header("x-device-locale", Locale.getDefault().toLanguageTag())
             if (Store.hwidEnabled) {
                 // Unique device id — required by panels enforcing a per-sub
                 // device limit; kept behind the toggle for privacy.
                 requestBuilder.header("x-hwid", Utils.hwid(context))
-                requestBuilder.header("x-device-model", Build.MODEL ?: "")
             }
 
             client.newCall(requestBuilder.build()).execute().use { resp ->

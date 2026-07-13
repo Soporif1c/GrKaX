@@ -9,6 +9,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -46,18 +48,20 @@ object UpdateChecker {
 
     suspend fun check(): Result = withContext(Dispatchers.IO) {
         try {
+            // Use the releases LIST (not /latest) so pre-releases are included.
             val request = Request.Builder()
-                .url("https://api.github.com/repos/$REPO/releases/latest")
+                .url("https://api.github.com/repos/$REPO/releases?per_page=30")
                 .header("Accept", "application/vnd.github+json")
                 .header("User-Agent", "GrKaX/${BuildConfig.VERSION_NAME}")
                 .build()
 
             client.newCall(request).execute().use { resp ->
-                if (resp.code == 404) return@withContext Result.Error("No releases published yet")
                 if (!resp.isSuccessful) return@withContext Result.Error("HTTP ${resp.code}")
 
                 val body = resp.body?.string().orEmpty()
-                val obj = json.parseToJsonElement(body).jsonObject
+                val releases = json.parseToJsonElement(body).jsonArray.mapNotNull { it as? JsonObject }
+                val obj = releases.firstOrNull { it["draft"]?.jsonPrimitive?.booleanOrNull != true }
+                    ?: return@withContext Result.Error("No releases published yet")
                 val tag = obj["tag_name"]?.jsonPrimitive?.content.orEmpty()
                 val htmlUrl = obj["html_url"]?.jsonPrimitive?.content ?: "https://github.com/$REPO/releases"
                 val notes = obj["body"]?.jsonPrimitive?.content.orEmpty()
