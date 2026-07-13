@@ -206,7 +206,11 @@ private fun AppRow(app: AppEntry, checked: Boolean, enabled: Boolean, onToggle: 
 private fun loadApps(context: android.content.Context): List<AppEntry> {
     val pm = context.packageManager
     val self = context.packageName
-    val infos = pm.getInstalledApplications(0)
+    val infos = try {
+        pm.getInstalledApplications(0)
+    } catch (e: Exception) {
+        return emptyList()
+    }
     return infos.asSequence()
         .filter { it.packageName != self }
         .filter { info ->

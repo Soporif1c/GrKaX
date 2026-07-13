@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" font-family="Segoe UI, system-ui, sans-serif">
+  <defs>
+    <linearGradient id="bbg" x1="0" y1="0" x2="1200" y2="320" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B1020"/><stop offset="0.55" stop-color="#131A31"/><stop offset="1" stop-color="#0B1020"/>
+    </linearGradient>
+    <linearGradient id="bacc" x1="70" y1="90" x2="230" y2="250" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8B7CFF"/><stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#8B7CFF" stop-opacity="0.35"/><stop offset="1" stop-color="#8B7CFF" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="bclip"><rect width="1200" height="320" rx="20"/></clipPath>
+  </defs>
+  <g clip-path="url(#bclip)">
+    <rect width="1200" height="320" fill="url(#bbg)"/>
+    <circle cx="1000" cy="80" r="320" fill="url(#glow)"/>
+    <circle cx="180" cy="250" r="220" fill="url(#glow)" opacity="0.6"/>
+
+    <!-- logo -->
+    <g transform="translate(96,86) scale(1.45)">
+      <path d="M54 28 L79 38 V59 C79 77 67 89 54 93 C41 89 29 77 29 59 V38 Z" fill="url(#bacc)"/>
+      <path d="M59 43 L44 64 L52.5 64 L49 79 L65 56 L56.5 56 L60 43 Z" fill="#0B1020"/>
+    </g>
+
+    <!-- wordmark -->
+    <text x="290" y="150" fill="#E7EAF6" font-size="82" font-weight="800" letter-spacing="-2">GrKa
+      <tspan fill="#22D3EE">X</tspan>
+    </text>
+    <text x="294" y="196" fill="#A6ADCE" font-size="24" font-weight="500">Fast, private VPN for Android — powered by Xray</text>
+
+    <!-- protocol chips -->
+    <g font-size="17" font-weight="600">
+      <rect x="294" y="224" width="86" height="34" rx="17" fill="#1C2444"/><text x="337" y="246" fill="#8B7CFF" text-anchor="middle">XHTTP</text>
+      <rect x="390" y="224" width="92" height="34" rx="17" fill="#1C2444"/><text x="436" y="246" fill="#22D3EE" text-anchor="middle">REALITY</text>
+      <rect x="492" y="224" width="76" height="34" rx="17" fill="#1C2444"/><text x="530" y="246" fill="#A6ADCE" text-anchor="middle">VLESS</text>
+      <rect x="578" y="224" width="86" height="34" rx="17" fill="#1C2444"/><text x="621" y="246" fill="#A6ADCE" text-anchor="middle">VMess</text>
+      <rect x="674" y="224" width="82" height="34" rx="17" fill="#1C2444"/><text x="715" y="246" fill="#A6ADCE" text-anchor="middle">Trojan</text>
+      <rect x="766" y="224" width="130" height="34" rx="17" fill="#1C2444"/><text x="831" y="246" fill="#A6ADCE" text-anchor="middle">Shadowsocks</text>
+    </g>
+  </g>
+</svg>

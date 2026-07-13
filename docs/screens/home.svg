@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="620" viewBox="0 0 300 620" font-family="Segoe UI, system-ui, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="620" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B1020"/><stop offset="1" stop-color="#131A31"/>
+    </linearGradient>
+    <linearGradient id="acc" x1="80" y1="150" x2="220" y2="290" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8B7CFF"/><stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+    <clipPath id="scr"><rect x="0" y="0" width="300" height="620" rx="30"/></clipPath>
+  </defs>
+  <g clip-path="url(#scr)">
+    <rect width="300" height="620" fill="url(#bg)"/>
+
+    <!-- status bar -->
+    <text x="22" y="30" fill="#A6ADCE" font-size="12" font-weight="600">9:41</text>
+    <g fill="#A6ADCE"><rect x="248" y="21" width="16" height="10" rx="2"/><circle cx="272" cy="26" r="4"/></g>
+
+    <!-- header -->
+    <text x="150" y="70" fill="#E7EAF6" font-size="20" font-weight="700" text-anchor="middle">GrKa X</text>
+    <text x="150" y="90" fill="#22D3EE" font-size="13" text-anchor="middle" font-weight="600">Connected</text>
+
+    <!-- power button -->
+    <circle cx="150" cy="205" r="74" fill="#131A31" stroke="#1C2444" stroke-width="1"/>
+    <circle cx="150" cy="205" r="74" fill="none" stroke="url(#acc)" stroke-width="5"/>
+    <g stroke="#8B7CFF" stroke-width="6" stroke-linecap="round" fill="none">
+      <path d="M124 188 A34 34 0 1 0 176 188"/>
+      <path d="M150 176 V208"/>
+    </g>
+
+    <text x="150" y="312" fill="#A6ADCE" font-size="18" font-weight="600" text-anchor="middle" font-variant-numeric="tabular-nums">00:14:32</text>
+
+    <!-- selected server card -->
+    <rect x="20" y="336" width="260" height="58" rx="18" fill="#1C2444"/>
+    <circle cx="42" cy="365" r="5" fill="#8B7CFF"/>
+    <text x="58" y="361" fill="#E7EAF6" font-size="13" font-weight="600">Netherlands · Amsterdam</text>
+    <text x="58" y="379" fill="#A6ADCE" font-size="11">VLESS · XHTTP · REALITY</text>
+    <text x="260" y="369" fill="#22D3EE" font-size="12" font-weight="600" text-anchor="end">Change</text>
+
+    <!-- stat cards -->
+    <rect x="20" y="404" width="125" height="76" rx="18" fill="#1C2444"/>
+    <text x="36" y="426" fill="#A6ADCE" font-size="11">Download</text>
+    <text x="36" y="450" fill="#22D3EE" font-size="17" font-weight="700">12.4 MB/s</text>
+    <text x="36" y="468" fill="#A6ADCE" font-size="11">1.8 GB</text>
+
+    <rect x="155" y="404" width="125" height="76" rx="18" fill="#1C2444"/>
+    <text x="171" y="426" fill="#A6ADCE" font-size="11">Upload</text>
+    <text x="171" y="450" fill="#F471B5" font-size="17" font-weight="700">0.9 MB/s</text>
+    <text x="171" y="468" fill="#A6ADCE" font-size="11">240 MB</text>
+
+    <!-- latency card -->
+    <rect x="20" y="490" width="260" height="56" rx="18" fill="#1C2444"/>
+    <text x="36" y="514" fill="#E7EAF6" font-size="13" font-weight="600">Latency</text>
+    <text x="36" y="532" fill="#A6ADCE" font-size="11">86 ms</text>
+    <text x="260" y="524" fill="#22D3EE" font-size="13" font-weight="600" text-anchor="end">Test</text>
+
+    <!-- bottom nav -->
+    <rect x="0" y="568" width="300" height="52" fill="#0E1426"/>
+    <g text-anchor="middle">
+      <circle cx="60" cy="588" r="3.5" fill="#8B7CFF"/><text x="60" y="606" fill="#8B7CFF" font-size="10" font-weight="600">Home</text>
+      <circle cx="150" cy="588" r="3.5" fill="#5a617a"/><text x="150" y="606" fill="#8792b5" font-size="10">Servers</text>
+      <circle cx="240" cy="588" r="3.5" fill="#5a617a"/><text x="240" y="606" fill="#8792b5" font-size="10">Settings</text>
+    </g>
+  </g>
+  <rect x="0.5" y="0.5" width="299" height="619" rx="30" fill="none" stroke="#2a3352" stroke-width="1"/>
+</svg>

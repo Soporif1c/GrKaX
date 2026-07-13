@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="620" viewBox="0 0 300 620" font-family="Segoe UI, system-ui, sans-serif">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="620" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B1020"/><stop offset="1" stop-color="#131A31"/>
+    </linearGradient>
+    <clipPath id="scr2"><rect x="0" y="0" width="300" height="620" rx="30"/></clipPath>
+  </defs>
+  <g clip-path="url(#scr2)">
+    <rect width="300" height="620" fill="url(#bg2)"/>
+    <text x="22" y="30" fill="#A6ADCE" font-size="12" font-weight="600">9:41</text>
+    <g fill="#A6ADCE"><rect x="248" y="21" width="16" height="10" rx="2"/><circle cx="272" cy="26" r="4"/></g>
+
+    <!-- header row -->
+    <text x="22" y="66" fill="#E7EAF6" font-size="20" font-weight="700">Servers</text>
+    <circle cx="238" cy="60" r="14" fill="#131A31"/><path d="M232 60 h12 M238 54 v12" stroke="#22D3EE" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="272" cy="60" r="14" fill="#131A31"/><path d="M266 60 h12 M272 54 v12" stroke="#8B7CFF" stroke-width="2" stroke-linecap="round" transform="rotate(45 272 60)"/>
+
+    <!-- subscription header -->
+    <rect x="16" y="86" width="268" height="66" rx="18" fill="#1C2444"/>
+    <text x="32" y="112" fill="#E7EAF6" font-size="14" font-weight="700">Remnawave · Main</text>
+    <text x="32" y="130" fill="#A6ADCE" font-size="11">8 servers</text>
+    <rect x="32" y="138" width="200" height="5" rx="2.5" fill="#0B1020"/>
+    <rect x="32" y="138" width="120" height="5" rx="2.5" fill="#8B7CFF"/>
+    <text x="240" y="130" fill="#A6ADCE" font-size="10" text-anchor="end">62.4 / 200 GB</text>
+
+    <!-- server rows -->
+    <g font-size="13">
+      <!-- selected -->
+      <rect x="16" y="162" width="268" height="52" rx="16" fill="#2C2A5E"/>
+      <circle cx="36" cy="188" r="5" fill="#8B7CFF"/>
+      <text x="52" y="184" fill="#DCD6FF" font-weight="600">Netherlands · Amsterdam</text>
+      <text x="52" y="201" fill="#A6ADCE" font-size="11">VLESS · XHTTP · REALITY</text>
+      <text x="248" y="192" fill="#8B7CFF" font-weight="600" text-anchor="end" font-size="12">86 ms</text>
+
+      <rect x="16" y="220" width="268" height="52" rx="16" fill="#1C2444"/>
+      <circle cx="36" cy="246" r="5" fill="#39406B"/>
+      <text x="52" y="242" fill="#E7EAF6" font-weight="600">Germany · Frankfurt</text>
+      <text x="52" y="259" fill="#A6ADCE" font-size="11">VLESS · XHTTP · REALITY</text>
+      <text x="248" y="250" fill="#8B7CFF" font-weight="600" text-anchor="end" font-size="12">42 ms</text>
+
+      <rect x="16" y="278" width="268" height="52" rx="16" fill="#1C2444"/>
+      <circle cx="36" cy="304" r="5" fill="#39406B"/>
+      <text x="52" y="300" fill="#E7EAF6" font-weight="600">Finland · Helsinki</text>
+      <text x="52" y="317" fill="#A6ADCE" font-size="11">Trojan · TCP · TLS</text>
+      <text x="248" y="308" fill="#22D3EE" font-weight="600" text-anchor="end" font-size="12">58 ms</text>
+
+      <rect x="16" y="336" width="268" height="52" rx="16" fill="#1C2444"/>
+      <circle cx="36" cy="362" r="5" fill="#39406B"/>
+      <text x="52" y="358" fill="#E7EAF6" font-weight="600">USA · New York</text>
+      <text x="52" y="375" fill="#A6ADCE" font-size="11">VMess · WS · TLS</text>
+      <text x="248" y="366" fill="#F471B5" font-weight="600" text-anchor="end" font-size="12">180 ms</text>
+
+      <rect x="16" y="394" width="268" height="52" rx="16" fill="#1C2444"/>
+      <circle cx="36" cy="420" r="5" fill="#39406B"/>
+      <text x="52" y="416" fill="#E7EAF6" font-weight="600">Japan · Tokyo</text>
+      <text x="52" y="433" fill="#A6ADCE" font-size="11">Shadowsocks</text>
+      <text x="248" y="424" fill="#F471B5" font-weight="600" text-anchor="end" font-size="12">210 ms</text>
+
+      <rect x="16" y="452" width="268" height="52" rx="16" fill="#1C2444"/>
+      <circle cx="36" cy="478" r="5" fill="#39406B"/>
+      <text x="52" y="474" fill="#E7EAF6" font-weight="600">France · Paris</text>
+      <text x="52" y="491" fill="#A6ADCE" font-size="11">VLESS · gRPC · REALITY</text>
+      <text x="248" y="482" fill="#8B7CFF" font-weight="600" text-anchor="end" font-size="12">74 ms</text>
+    </g>
+
+    <rect x="0" y="524" width="300" height="44" fill="url(#bg2)" opacity="0.0"/>
+    <!-- bottom nav -->
+    <rect x="0" y="568" width="300" height="52" fill="#0E1426"/>
+    <g text-anchor="middle">
+      <circle cx="60" cy="588" r="3.5" fill="#5a617a"/><text x="60" y="606" fill="#8792b5" font-size="10">Home</text>
+      <circle cx="150" cy="588" r="3.5" fill="#8B7CFF"/><text x="150" y="606" fill="#8B7CFF" font-size="10" font-weight="600">Servers</text>
+      <circle cx="240" cy="588" r="3.5" fill="#5a617a"/><text x="240" y="606" fill="#8792b5" font-size="10">Settings</text>
+    </g>
+  </g>
+  <rect x="0.5" y="0.5" width="299" height="619" rx="30" fill="none" stroke="#2a3352" stroke-width="1"/>
+</svg>

@@ -167,6 +167,13 @@ object ConfigBuilder {
 
             if (!forTest) {
                 putJsonObject("stats") {}
+                putJsonObject("policy") {
+                    // Required for the outbound traffic counters (speed display).
+                    putJsonObject("system") {
+                        put("statsOutboundUplink", true)
+                        put("statsOutboundDownlink", true)
+                    }
+                }
                 put("dns", ensureDns(cfg["dns"] as? JsonObject, s))
                 putJsonArray("inbounds") { add(socksInbound(s)) }
             }
@@ -181,12 +188,23 @@ object ConfigBuilder {
         return root.toString()
     }
 
-    /** Moves this profile's proxy outbound to the front (routing default) and
-     *  normalizes legacy XHTTP keys in every outbound. */
+    private val proxyProtocols = setOf("vless", "vmess", "trojan", "shadowsocks")
+
+    /** Moves this profile's proxy outbound to the front (so it is the routing
+     *  default) and normalizes legacy XHTTP keys in every outbound. Falls back
+     *  to the first proxy-protocol outbound when the tag is missing, so traffic
+     *  never silently defaults to a "direct" outbound. */
     private fun reorderOutbounds(outbounds: JsonArray, proxyTag: String?): JsonArray {
         val list = outbounds.mapNotNull { it as? JsonObject }.map { normalizeOutbound(it) }
-        if (proxyTag.isNullOrBlank()) return JsonArray(list)
-        val idx = list.indexOfFirst { it["tag"]?.jsonPrimitive?.contentOrNull == proxyTag }
+        var idx = -1
+        if (!proxyTag.isNullOrBlank()) {
+            idx = list.indexOfFirst { it["tag"]?.jsonPrimitive?.contentOrNull == proxyTag }
+        }
+        if (idx < 0) {
+            idx = list.indexOfFirst {
+                it["protocol"]?.jsonPrimitive?.contentOrNull in proxyProtocols
+            }
+        }
         if (idx <= 0) return JsonArray(list)
         val out = ArrayList<JsonObject>(list.size)
         out.add(list[idx])
