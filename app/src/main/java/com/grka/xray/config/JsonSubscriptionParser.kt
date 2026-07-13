@@ -54,6 +54,8 @@ object JsonSubscriptionParser {
                 obj["routing"]?.let { routing = it.toString() }
             }
             val fullConfig = obj.toString()
+            // xray-json (Happ/Remnawave) carries the friendly server name here.
+            val remarks = obj["remarks"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
             var idx = 0
             for (ob in outbounds) {
                 val outbound = ob as? JsonObject ?: continue
@@ -62,6 +64,9 @@ object JsonSubscriptionParser {
                 outboundToProfile(outbound, idx)?.let {
                     it.fullConfig = fullConfig
                     it.proxyTag = outbound["tag"]?.jsonPrimitive?.contentOrNull
+                    if (remarks != null) {
+                        it.name = if (idx == 0) remarks else "$remarks · ${it.proxyTag ?: (idx + 1)}"
+                    }
                     profiles.add(it); idx++
                 }
             }
