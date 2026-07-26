@@ -9,6 +9,12 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      # The desktop client lives in the same repo but builds on its own runner.
+      - 'desktop/**'
+      - 'docs/**'
+      - 'README.md'
+      - '.github/workflows/build-macos.yml'
 
 permissions:
   contents: write

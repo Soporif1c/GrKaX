@@ -1,0 +1,91 @@
+#!/bin/sh
+# GrKa X — macOS TUN helper.
+#
+# Runs with administrator rights (a utun device and route table changes both
+# need root). Kept as a standalone script so the privileged surface is small
+# and auditable; when an Apple Developer account exists this is what gets
+# replaced by a signed launchd daemon or a NetworkExtension provider.
+#
+#   grkax-tun.sh up   <tun2socks-bin> <socks-port> <interface> <service> <dns>
+#   grkax-tun.sh down <service>
+
+set -e
+
+STATE_DIR="/var/run/grkax"
+PID_FILE="$STATE_DIR/tun2socks.pid"
+DEV_FILE="$STATE_DIR/tun.dev"
+LOG_FILE="$STATE_DIR/tun2socks.log"
+
+# 198.18.0.0/15 is the RFC 2544 benchmarking range — safe to steal, unlike a
+# 10.x address a home router might already be using.
+TUN_ADDR="198.18.0.1"
+TUN_PEER="198.18.0.2"
+
+pick_device() {
+    i=200
+    while [ "$i" -lt 250 ]; do
+        if ! ifconfig "utun$i" >/dev/null 2>&1; then
+            echo "utun$i"
+            return 0
+        fi
+        i=$((i + 1))
+    done
+    return 1
+}
+
+cmd_up() {
+    BIN="$1"; PORT="$2"; IFACE="$3"; SERVICE="$4"; DNS="$5"
+
+    [ -x "$BIN" ] || { echo "tun2socks binary not executable: $BIN" >&2; exit 1; }
+
+    mkdir -p "$STATE_DIR"
+    DEV=$(pick_device) || { echo "no free utun device" >&2; exit 1; }
+    echo "$DEV" > "$DEV_FILE"
+
+    "$BIN" -device "$DEV" -proxy "socks5://127.0.0.1:$PORT" -interface "$IFACE" \
+        -loglevel warning > "$LOG_FILE" 2>&1 &
+    echo $! > "$PID_FILE"
+
+    # tun2socks creates the interface; give it a moment to show up.
+    n=0
+    while [ "$n" -lt 50 ]; do
+        ifconfig "$DEV" >/dev/null 2>&1 && break
+        sleep 0.1
+        n=$((n + 1))
+    done
+    ifconfig "$DEV" >/dev/null 2>&1 || { echo "$DEV never appeared — see $LOG_FILE" >&2; exit 1; }
+
+    ifconfig "$DEV" "$TUN_ADDR" "$TUN_PEER" up
+
+    # Two /1 routes outrank the existing default route without deleting it,
+    # so tearing the tunnel down cannot strand the machine offline.
+    route -n add -net 0.0.0.0/1 "$TUN_PEER" >/dev/null
+    route -n add -net 128.0.0.0/1 "$TUN_PEER" >/dev/null
+
+    /usr/sbin/networksetup -setdnsservers "$SERVICE" "$DNS"
+    echo "$DEV"
+}
+
+cmd_down() {
+    SERVICE="$1"
+
+    if [ -f "$PID_FILE" ]; then
+        kill "$(cat "$PID_FILE")" 2>/dev/null || true
+        rm -f "$PID_FILE"
+    fi
+
+    route -n delete -net 0.0.0.0/1 "$TUN_PEER" >/dev/null 2>&1 || true
+    route -n delete -net 128.0.0.0/1 "$TUN_PEER" >/dev/null 2>&1 || true
+
+    if [ -n "$SERVICE" ]; then
+        /usr/sbin/networksetup -setdnsservers "$SERVICE" Empty || true
+    fi
+
+    rm -f "$DEV_FILE"
+}
+
+case "$1" in
+    up)   shift; cmd_up "$@" ;;
+    down) shift; cmd_down "$@" ;;
+    *)    echo "usage: $0 up|down ..." >&2; exit 2 ;;
+esac

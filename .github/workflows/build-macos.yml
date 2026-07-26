@@ -1,0 +1,147 @@
+name: Build macOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Тег релиза для выгрузки .dmg (например mac-v0.1.0)'
+        required: false
+        type: string
+  push:
+    branches:
+      - main
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/build-macos.yml'
+
+permissions:
+  contents: write
+
+env:
+  # Same core the Android client ships, so behaviour matches on both platforms.
+  XRAY_VERSION: 'v26.7.11'
+  TUN2SOCKS_VERSION: 'v2.6.0'
+
+jobs:
+  build:
+    name: macOS ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    # The Intel leg is allowed to fail: GitHub keeps retiring Intel runner
+    # labels, and an arm64 build must not be held hostage by that.
+    continue-on-error: ${{ matrix.optional }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+            xray_asset: Xray-macos-arm64-v8a.zip
+            tun2socks_asset: tun2socks-darwin-arm64.zip
+            optional: false
+          - runner: macos-13
+            arch: x64
+            xray_asset: Xray-macos-64.zip
+            tun2socks_asset: tun2socks-darwin-amd64.zip
+            optional: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Fetch Xray core
+        run: |
+          set -euo pipefail
+          mkdir -p desktop/resources/common
+          curl -fL --retry 3 -o /tmp/xray.zip \
+            "https://github.com/XTLS/Xray-core/releases/download/${XRAY_VERSION}/${{ matrix.xray_asset }}"
+          unzip -o /tmp/xray.zip -d /tmp/xray
+          mv /tmp/xray/xray desktop/resources/common/xray
+          chmod +x desktop/resources/common/xray
+
+      - name: Fetch tun2socks
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/tun2socks.zip \
+            "https://github.com/xjasonlyu/tun2socks/releases/download/${TUN2SOCKS_VERSION}/${{ matrix.tun2socks_asset }}"
+          unzip -o /tmp/tun2socks.zip -d /tmp/tun2socks
+          # The archive names the binary after the platform; normalise it.
+          found=$(find /tmp/tun2socks -type f -perm +111 | head -n 1)
+          test -n "$found"
+          mv "$found" desktop/resources/common/tun2socks
+          chmod +x desktop/resources/common/tun2socks
+
+      - name: Fetch geo data
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o desktop/resources/common/geoip.dat \
+            https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
+          curl -fL --retry 3 -o desktop/resources/common/geosite.dat \
+            https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
+          chmod +x desktop/resources/common/grkax-tun.sh
+          ls -la desktop/resources/common/
+
+      - name: Validate generated configs against the core
+        working-directory: desktop
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew smoke -PsmokeOut=build/smoke --stacktrace
+          export XRAY_LOCATION_ASSET="$PWD/resources/common"
+          for cfg in build/smoke/*.json; do
+            ./resources/common/xray run -test -c "$cfg" > /dev/null
+            echo "ok  $cfg"
+          done
+
+      - name: Build app bundle
+        working-directory: desktop
+        run: ./gradlew createDistributable --stacktrace
+
+      - name: Ad-hoc sign
+        run: |
+          set -euo pipefail
+          APP=$(find desktop/build/compose/binaries/main/app -maxdepth 1 -name '*.app' | head -n 1)
+          test -n "$APP"
+          # Apple Silicon refuses to execute unsigned Mach-O binaries. Without a
+          # Developer ID we sign ad-hoc, which is enough to run — users still
+          # have to clear the quarantine flag after downloading. Replace this
+          # with a real identity + notarisation once the account exists.
+          codesign --force --deep --sign - "$APP"
+          codesign --verify --verbose=2 "$APP"
+
+      - name: Package DMG
+        working-directory: desktop
+        run: ./gradlew packageDmg --stacktrace
+
+      - name: Rename artifact
+        id: rename
+        run: |
+          set -euo pipefail
+          DMG=$(find desktop/build/compose/binaries/main/dmg -name '*.dmg' | head -n 1)
+          test -n "$DMG"
+          # No version in the file name on purpose: it keeps
+          # releases/latest/download/<name> a permanent link, the same trick the
+          # Android APKs use.
+          OUT="GrKaX-macos-${{ matrix.arch }}.dmg"
+          mv "$DMG" "$OUT"
+          echo "dmg=$OUT" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: dmg-${{ matrix.arch }}
+          path: ${{ steps.rename.outputs.dmg }}
+
+      - name: Upload to release
+        if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: ${{ steps.rename.outputs.dmg }}
+          tag: ${{ inputs.release_tag }}
+          file_glob: false
+          prerelease: true

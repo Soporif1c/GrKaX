@@ -14,6 +14,16 @@ app/src/main/jniLibs/
 app/src/main/assets/geoip.dat
 app/src/main/assets/geosite.dat
 hev-socks5-tunnel/
+
+# desktop (macOS client) — binaries and geo data are fetched by CI, not committed
+desktop/build/
+desktop/.gradle/
+desktop/resources/common/xray
+desktop/resources/common/xray.exe
+desktop/resources/common/tun2socks
+desktop/resources/common/geoip.dat
+desktop/resources/common/geosite.dat
+
 *.keystore
 *.jks
 *.pfx
