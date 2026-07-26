@@ -42,9 +42,13 @@ object UpdateChecker {
 
             val releases = json.parseToJsonElement(response.body()) as? JsonArray ?: return@runCatching null
             // Releases are newest-first; drafts are useless to us, pre-releases
-            // are not — the whole project ships as 0.x pre-releases.
+            // are not — the whole project ships as 0.x pre-releases. The same
+            // repo also publishes Android-only releases, so skip anything
+            // without a .dmg rather than offering an update we cannot install.
             val release = releases.filterIsInstance<JsonObject>()
-                .firstOrNull { it["draft"]?.jsonPrimitive?.booleanOrNull != true }
+                .firstOrNull {
+                    it["draft"]?.jsonPrimitive?.booleanOrNull != true && hasDmg(it["assets"] as? JsonArray)
+                }
                 ?: return@runCatching null
 
             val tag = release["tag_name"]?.jsonPrimitive?.contentOrNull.orEmpty()
@@ -65,6 +69,11 @@ object UpdateChecker {
             )
         }.getOrNull()
     }
+
+    private fun hasDmg(assets: JsonArray?): Boolean =
+        assets?.filterIsInstance<JsonObject>()?.any {
+            it["name"]?.jsonPrimitive?.contentOrNull.orEmpty().endsWith(".dmg", ignoreCase = true)
+        } == true
 
     /** True when [candidate] sorts after the running version. */
     fun isNewer(candidate: String, current: String = AppVersion.name): Boolean {
