@@ -73,13 +73,55 @@ GrKa X подключает ваш телефон к вашему личному
 
 ## Добавление по ссылке (deep link)
 
-Чтобы на странице подписки сделать кнопку «Добавить в GrKa X», используйте схему:
+Чтобы на странице подписки сделать кнопку «Добавить в GrKa X», используйте:
 
 ```
 grkax://install-sub?url=<URL_вашей_подписки>
 ```
 
-Также приложение открывает прямые ссылки серверов (`vless://`, `vmess://`, `trojan://`, `ss://`) и предлагает себя для кнопок вида `v2raytun://`, `v2rayng://`, `hiddify://` — если такие уже есть на странице подписки.
+<details>
+<summary><b>Все поддерживаемые ссылки</b> (нажмите, чтобы раскрыть)</summary>
+
+**Своя схема — добавить подписку:**
+
+| Ссылка | Что делает |
+|---|---|
+| `grkax://install-sub?url=<URL>` | Добавляет подписку и сразу обновляет её *(рекомендуется)* |
+| `grkax://import/<URL>` | То же самое, URL в пути |
+| `grkax://install-config?url=<URL>` | То же самое |
+| `grkax://add/<URL>` | То же самое |
+
+Если вместо ссылки на подписку передать сами ссылки серверов (или base64-список), они добавятся как серверы.
+
+**Прямые ссылки серверов** — открываются приложением как одиночный сервер:
+
+```
+vless://…    vmess://…    trojan://…    ss://…
+```
+
+**Чужие схемы** — приложение предложит себя, если на странице уже есть кнопка для другого клиента:
+
+```
+v2raytun://…   v2rayng://…   hiddify://…   streisand://…   sn://…
+```
+
+> В Remnawave можно добавить своё приложение с deep link `grkax://install-sub?url={SUBSCRIPTION_URL}` — тогда кнопка на странице подписки будет вести прямо в GrKa X.
+
+</details>
+
+## Постоянные ссылки на скачивание
+
+Эти ссылки **всегда** ведут на последнюю версию — их можно смело давать пользователям или размещать на странице подписки:
+
+| Архитектура | Ссылка |
+|---|---|
+| **arm64-v8a** *(большинство телефонов)* | [`…/releases/latest/download/app-arm64-v8a-release.apk`](https://github.com/Soporif1c/GrKaX/releases/latest/download/app-arm64-v8a-release.apk) |
+| **universal** *(подойдёт всем)* | [`…/releases/latest/download/app-universal-release.apk`](https://github.com/Soporif1c/GrKaX/releases/latest/download/app-universal-release.apk) |
+| armeabi-v7a *(старые)* | [`…/releases/latest/download/app-armeabi-v7a-release.apk`](https://github.com/Soporif1c/GrKaX/releases/latest/download/app-armeabi-v7a-release.apk) |
+| x86_64 | [`…/releases/latest/download/app-x86_64-release.apk`](https://github.com/Soporif1c/GrKaX/releases/latest/download/app-x86_64-release.apk) |
+| x86 | [`…/releases/latest/download/app-x86-release.apk`](https://github.com/Soporif1c/GrKaX/releases/latest/download/app-x86-release.apk) |
+
+Страница последнего релиза: **[github.com/Soporif1c/GrKaX/releases/latest](https://github.com/Soporif1c/GrKaX/releases/latest)**
 
 ## Протоколы и транспорты
 

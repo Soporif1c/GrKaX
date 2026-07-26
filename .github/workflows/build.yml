@@ -15,7 +15,9 @@ permissions:
 
 env:
   HEV_TUN_TAG: '2.15.0'
-  LIBV2RAY_TAG: 'v26.6.27'
+  # Xray core (via the libv2ray wrapper). Single source of truth — the
+  # download step below reads this, so the two can't drift apart.
+  LIBV2RAY_TAG: 'v26.7.11'
 
 jobs:
   build:
@@ -51,7 +53,7 @@ jobs:
       uses: robinraju/release-downloader@v1.13
       with:
         repository: '2dust/AndroidLibXrayLite'
-        tag: 'v26.6.27'
+        tag: ${{ env.LIBV2RAY_TAG }}
         fileName: 'libv2ray.aar'
         out-file-path: app/libs/
 
