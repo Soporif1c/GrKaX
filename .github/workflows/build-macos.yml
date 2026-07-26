@@ -23,6 +23,11 @@ on:
 permissions:
   contents: write
 
+# A new push supersedes the previous build of the same ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   # Same core the Android client ships, so behaviour matches on both platforms.
   XRAY_VERSION: 'v26.7.11'
@@ -33,8 +38,10 @@ jobs:
     name: macOS ${{ matrix.arch }}
     runs-on: ${{ matrix.runner }}
     # The Intel leg is allowed to fail: GitHub keeps retiring Intel runner
-    # labels, and an arm64 build must not be held hostage by that.
+    # labels, and an arm64 build must not be held hostage by that. A retired
+    # label does not fail — it queues forever — hence the timeout.
     continue-on-error: ${{ matrix.optional }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -44,7 +51,8 @@ jobs:
             xray_asset: Xray-macos-arm64-v8a.zip
             tun2socks_asset: tun2socks-darwin-arm64.zip
             optional: false
-          - runner: macos-13
+          # macos-13 was retired; macos-15-intel is the current Intel label.
+          - runner: macos-15-intel
             arch: x64
             xray_asset: Xray-macos-64.zip
             tun2socks_asset: tun2socks-darwin-amd64.zip
