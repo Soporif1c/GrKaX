@@ -13,6 +13,12 @@ on:
     paths:
       - 'desktop/**'
       - '.github/workflows/build-macos.yml'
+  # Needed to get a .dmg out of a branch: workflow_dispatch is only registered
+  # once the workflow file lands on the default branch.
+  pull_request:
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/build-macos.yml'
 
 permissions:
   contents: write
