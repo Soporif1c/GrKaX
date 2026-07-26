@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 108 108" role="img" aria-label="GrKa X">
+  <defs>
+    <linearGradient id="gkBg" x1="0" y1="0" x2="108" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#131A31"/>
+      <stop offset="1" stop-color="#0B1020"/>
+    </linearGradient>
+    <linearGradient id="gkShield" x1="34" y1="26" x2="74" y2="82" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8B7CFF"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+  </defs>
+  <rect width="108" height="108" rx="24" fill="url(#gkBg)"/>
+  <path d="M54 26 L74 34 L74 54 C74 68 65 78 54 82 C43 78 34 68 34 54 L34 34 Z"
+        fill="url(#gkShield)" stroke="#22D3EE" stroke-width="3"/>
+  <path d="M56 38 L46 56 L53 56 L51 70 L62 50 L55 50 Z" fill="#0B1020"/>
+</svg>

@@ -71,6 +71,7 @@ fun HomeScreen(
     onConnect: () -> Unit,
     onDisconnect: () -> Unit,
     onOpenServers: () -> Unit,
+    onOpenSettings: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -127,7 +128,27 @@ fun HomeScreen(
                 color = if (state == ConnState.CONNECTED) cs.primary else cs.onSurfaceVariant,
             )
 
-            Spacer(Modifier.height(36.dp))
+            // Quiet nudge when a newer release was found by the daily check.
+            val update by com.grka.xray.net.UpdateChecker.available.collectAsState()
+            update?.let { info ->
+                Spacer(Modifier.height(12.dp))
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpenSettings() },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = cs.primaryContainer),
+                ) {
+                    Text(
+                        text = stringResource(R.string.update_banner, info.latestVersion),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = cs.onPrimaryContainer,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(if (update == null) 36.dp else 20.dp))
 
             PowerButton(state = state) {
                 pingResult = null

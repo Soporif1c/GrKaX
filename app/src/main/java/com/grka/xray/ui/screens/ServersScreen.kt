@@ -499,7 +499,7 @@ private fun SubscriptionDialog(
                 OutlinedTextField(
                     value = ua, onValueChange = { ua = it },
                     label = { Text(stringResource(R.string.sub_ua)) },
-                    placeholder = { Text("v2rayNG / Happ / Streisand…") },
+                    placeholder = { Text("Happ/3.13.0") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )

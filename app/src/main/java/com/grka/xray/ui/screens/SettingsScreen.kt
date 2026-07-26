@@ -32,6 +32,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -86,6 +88,19 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     var updateApkUrl by remember { mutableStateOf<String?>(null) }
     var downloading by remember { mutableStateOf(false) }
     var downloadProgress by remember { mutableFloatStateOf(0f) }
+    var autoCheck by remember { mutableStateOf(Store.autoCheckUpdates) }
+
+    // Pick up a pending update found by the daily background check.
+    val pendingUpdate by UpdateChecker.available.collectAsState()
+    LaunchedEffect(pendingUpdate) {
+        pendingUpdate?.let { info ->
+            if (updateApkUrl == null && !downloading) {
+                updateApkUrl = info.apkUrl
+                updateUrl = info.htmlUrl
+                updateStatus = context.getString(R.string.update_available, info.latestVersion)
+            }
+        }
+    }
 
     Column(
         modifier = modifier
@@ -287,6 +302,11 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                     modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
                 )
             }
+            SwitchRow(
+                title = stringResource(R.string.auto_check_updates),
+                subtitle = stringResource(R.string.auto_check_updates_hint),
+                checked = autoCheck,
+            ) { autoCheck = it; Store.autoCheckUpdates = it }
             ClickableRow(
                 title = stringResource(R.string.logs_open),
                 subtitle = stringResource(R.string.logs_open_hint),

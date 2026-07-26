@@ -13,11 +13,17 @@ class App : Application() {
         cleanupUpdateCache()
     }
 
-    /** Removes any update APK left in the cache after an install so it doesn't
-     *  linger. A fresh download recreates it on demand. */
+    /**
+     * Removes stale update APKs so the cache doesn't grow. Only files older than
+     * a day are deleted: a just-downloaded APK may still be being read by the
+     * package installer while we restart, and deleting it would break the install.
+     */
     private fun cleanupUpdateCache() {
         runCatching {
-            File(cacheDir, "updates").deleteRecursively()
+            val cutoff = System.currentTimeMillis() - 24L * 60 * 60 * 1000
+            File(cacheDir, "updates").listFiles()?.forEach { file ->
+                if (file.lastModified() < cutoff) file.delete()
+            }
         }
     }
 }

@@ -13,9 +13,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.grka.xray.data.Store
+import com.grka.xray.net.UpdateChecker
 import com.grka.xray.service.XVpnService
 import com.grka.xray.ui.theme.GrKaXTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -38,6 +41,10 @@ class MainActivity : ComponentActivity() {
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
+
+        // Quiet once-a-day check so users learn about new versions without
+        // having to visit GitHub. Honours the Settings toggle.
+        lifecycleScope.launch { UpdateChecker.autoCheck() }
 
         setContent {
             val theme by Store.themeFlow.collectAsState()

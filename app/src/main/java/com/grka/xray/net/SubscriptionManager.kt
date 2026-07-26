@@ -29,16 +29,14 @@ object SubscriptionManager {
 
     suspend fun update(context: Context, sub: Subscription): UpdateResult = withContext(Dispatchers.IO) {
         try {
-            // Some panels (Remnawave) return different formats per client. A
-            // custom UA (e.g. "Happ") lets the user request the xray-json with
-            // routing. A bare "Happ" is expanded to a realistic Happ UA so the
-            // panel's "user-agent contains happ" rule matches reliably.
+            // Identify as ourselves by default. Panels that serve different
+            // formats per client can be satisfied by setting a per-subscription
+            // User-Agent (e.g. "Happ/3.13.0"); a bare "Happ" is expanded to a
+            // full Happ UA so a "user-agent contains happ" rule matches.
             val uaRaw = sub.userAgent?.takeIf { it.isNotBlank() }
             val ua = when {
-                // Default to Happ: most panels (Remnawave) then return the
-                // xray-json config with the routing template out of the box.
-                uaRaw == null -> "Happ/3.13.0"
-                uaRaw.contains("happ", ignoreCase = true) && !uaRaw.contains("/") -> "Happ/3.13.0"
+                uaRaw == null -> "GrKaX/${BuildConfig.VERSION_NAME}"
+                uaRaw.equals("happ", ignoreCase = true) -> "Happ/3.13.0"
                 else -> uaRaw
             }
             val requestBuilder = Request.Builder()

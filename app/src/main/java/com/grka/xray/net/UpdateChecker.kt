@@ -23,6 +23,24 @@ object UpdateChecker {
 
     const val REPO = "Soporif1c/GrKaX"
 
+    /** Set when a newer release is known; shared by the Home banner and Settings. */
+    val available = kotlinx.coroutines.flow.MutableStateFlow<UpdateInfo?>(null)
+
+    private const val CHECK_INTERVAL_MS = 24L * 60 * 60 * 1000 // once a day
+
+    /**
+     * Background check on app start: honours the user's toggle and only hits
+     * the network once a day.
+     */
+    suspend fun autoCheck() {
+        if (!com.grka.xray.data.Store.autoCheckUpdates) return
+        val now = System.currentTimeMillis()
+        val last = com.grka.xray.data.Store.lastUpdateCheck
+        if (last != 0L && now - last < CHECK_INTERVAL_MS) return
+        check() // check() itself publishes to [available]
+        com.grka.xray.data.Store.lastUpdateCheck = System.currentTimeMillis()
+    }
+
     data class UpdateInfo(
         val latestVersion: String,
         val currentVersion: String,
@@ -69,16 +87,17 @@ object UpdateChecker {
 
                 val latest = tag.trimStart('v', 'V').trim()
                 val current = BuildConfig.VERSION_NAME
-                Result.Success(
-                    UpdateInfo(
-                        latestVersion = latest.ifEmpty { current },
-                        currentVersion = current,
-                        isNewer = isNewer(current, latest),
-                        htmlUrl = htmlUrl,
-                        notes = notes,
-                        apkUrl = apkUrl,
-                    )
+                val info = UpdateInfo(
+                    latestVersion = latest.ifEmpty { current },
+                    currentVersion = current,
+                    isNewer = isNewer(current, latest),
+                    htmlUrl = htmlUrl,
+                    notes = notes,
+                    apkUrl = apkUrl,
                 )
+                // Keep the shared banner state in sync with every check.
+                available.value = if (info.isNewer) info else null
+                Result.Success(info)
             }
         } catch (e: Exception) {
             Result.Error(e.message ?: e.javaClass.simpleName)
@@ -96,7 +115,9 @@ object UpdateChecker {
             }
         if (apks.isEmpty()) return null
         for (abi in Build.SUPPORTED_ABIS) {
-            apks.firstOrNull { it.first.contains(abi) }?.let { return it.second }
+            // Delimited match: a plain contains() would let "x86" pick the
+            // "app-x86_64-release.apk" asset on an x86-only device.
+            apks.firstOrNull { it.first.contains("-$abi-") }?.let { return it.second }
         }
         return apks.firstOrNull { it.first.contains("universal") }?.second ?: apks.first().second
     }

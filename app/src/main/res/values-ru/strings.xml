@@ -135,6 +135,9 @@
     <string name="update_installing">Открываю установщик…</string>
     <string name="update_download_failed">Не удалось скачать — нажмите, чтобы открыть страницу</string>
     <string name="update_open_page">Нажмите, чтобы открыть страницу загрузки</string>
+    <string name="auto_check_updates">Проверять обновления автоматически</string>
+    <string name="auto_check_updates_hint">Раз в сутки проверять новую версию и показывать уведомление</string>
+    <string name="update_banner">Доступно обновление v%1$s — откройте Настройки для установки</string>
 
     <!-- Config template -->
     <string name="config_template">Шаблон конфига (JSON)</string>
@@ -166,5 +169,5 @@
 
     <!-- Subscription User-Agent -->
     <string name="sub_ua">User-Agent (необязательно)</string>
-    <string name="sub_ua_hint">По умолчанию приложение представляется как Happ — панели вроде Remnawave отдают xray-json с вашим роутингом. Меняйте, только если ваша панель ждёт другой клиент; пусто — по умолчанию Happ.</string>
+    <string name="sub_ua_hint">Пусто — приложение представляется как GrKa X. Если панель отдаёт xray-json (с роутингом) только определённому клиенту, укажите его здесь — например Happ/3.13.0</string>
 </resources>

@@ -84,7 +84,11 @@ fun MainScreen(
     ) { padding ->
         val modifier = Modifier.padding(padding)
         when (tab) {
-            0 -> HomeScreen(modifier, onConnect, onDisconnect, onOpenServers = { tab = 1 })
+            0 -> HomeScreen(
+                modifier, onConnect, onDisconnect,
+                onOpenServers = { tab = 1 },
+                onOpenSettings = { tab = 2 },
+            )
             1 -> ServersScreen(modifier, switchProfile)
             else -> SettingsScreen(modifier)
         }

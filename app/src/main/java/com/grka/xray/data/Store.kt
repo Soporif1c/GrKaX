@@ -266,6 +266,15 @@ object Store {
         get() = bool("hide_notification", true)
         set(v) { settingsKv.encode("hide_notification", v) }
 
+    /** Check GitHub for a newer release at most once a day, on app start. */
+    var autoCheckUpdates: Boolean
+        get() = bool("auto_check_updates", true)
+        set(v) { settingsKv.encode("auto_check_updates", v) }
+
+    var lastUpdateCheck: Long
+        get() = settingsKv.decodeLong("last_update_check", 0L)
+        set(v) { settingsKv.encode("last_update_check", v) }
+
     var geoAssetsVersion: Int
         get() = int("geo_assets_version", 0)
         set(v) { settingsKv.encode("geo_assets_version", v) }

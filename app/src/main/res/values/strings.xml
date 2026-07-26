@@ -135,6 +135,9 @@
     <string name="update_installing">Opening installer…</string>
     <string name="update_download_failed">Download failed — tap to open the page</string>
     <string name="update_open_page">Tap to open the download page</string>
+    <string name="auto_check_updates">Check for updates automatically</string>
+    <string name="auto_check_updates_hint">Quietly look for a new version once a day and show a notice</string>
+    <string name="update_banner">Update available: v%1$s — open Settings to install</string>
 
     <!-- Config template -->
     <string name="config_template">Config template (JSON)</string>
@@ -166,5 +169,5 @@
 
     <!-- Subscription User-Agent -->
     <string name="sub_ua">User-Agent (optional)</string>
-    <string name="sub_ua_hint">By default the app identifies as Happ, so panels like Remnawave return the xray-json config with your routing. Change this only if your panel expects a different client; leave empty for the Happ default.</string>
+    <string name="sub_ua_hint">Leave empty to identify as GrKa X. If your panel serves the xray-json config (with routing) only to a specific client, enter it here — for example Happ/3.13.0</string>
 </resources>
