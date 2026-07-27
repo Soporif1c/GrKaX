@@ -34,6 +34,11 @@ object TunMode {
         if (!script.isFile) return "Не найден помощник grkax-tun.sh в бандле приложения"
         val tun2socks = Platform.bundled("tun2socks")
         if (!tun2socks.isFile) return "Не найден tun2socks в бандле приложения"
+        // Packaging does not carry the executable bit through reliably, so
+        // restore it the same way the core binary does.
+        for (file in listOf(script, tun2socks)) {
+            if (!file.canExecute()) file.setExecutable(true)
+        }
 
         val command = listOf(
             "/bin/sh", script.absolutePath, "up",

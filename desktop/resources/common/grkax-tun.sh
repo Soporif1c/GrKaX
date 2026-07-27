@@ -36,6 +36,9 @@ pick_device() {
 cmd_up() {
     BIN="$1"; PORT="$2"; IFACE="$3"; SERVICE="$4"; DNS="$5"
 
+    # We run as root here, so repair the executable bit rather than refusing:
+    # packaging into the .app does not carry it through reliably.
+    [ -x "$BIN" ] || chmod +x "$BIN" 2>/dev/null || true
     [ -x "$BIN" ] || { echo "tun2socks binary not executable: $BIN" >&2; exit 1; }
 
     mkdir -p "$STATE_DIR"

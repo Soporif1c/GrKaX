@@ -43,6 +43,15 @@ compose.desktop {
         mainClass = "com.grka.xray.desktop.MainKt"
 
         nativeDistributions {
+            // jlink keeps only the JDK modules it can see being used, and it
+            // cannot see java.net.http or the TLS crypto providers behind our
+            // reflection-free-but-lazy usage. They then vanish from the runtime
+            // image and blow up as NoClassDefFoundError in the packaged app
+            // only — `gradlew run` uses the full JDK and hides it entirely.
+            // Costs ~50 MB; a VPN client that cannot fetch a subscription is
+            // worth less than the disk space.
+            includeAllModules = true
+
             targetFormats(TargetFormat.Dmg)
             packageName = "GrKa X"
             // jpackage rejects a macOS bundle version whose major part is 0,

@@ -121,6 +121,13 @@ jobs:
           set -euo pipefail
           APP=$(find desktop/build/compose/binaries/main/app -maxdepth 1 -name '*.app' | head -n 1)
           test -n "$APP"
+          # Packaging drops the executable bit on bundled resources; restore it
+          # before signing, or the signature covers a file we then have to
+          # chmod at runtime.
+          for f in xray tun2socks grkax-tun.sh; do
+            [ -f "$APP/Contents/app/resources/$f" ] && chmod +x "$APP/Contents/app/resources/$f"
+          done
+          ls -l "$APP/Contents/app/resources/"
           # Apple Silicon refuses to execute unsigned Mach-O binaries. Without a
           # Developer ID we sign ad-hoc, which is enough to run — users still
           # have to clear the quarantine flag after downloading. Replace this
