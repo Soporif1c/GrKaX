@@ -100,6 +100,22 @@ jobs:
           chmod +x desktop/resources/common/grkax-tun.sh
           ls -la desktop/resources/common/
 
+      - name: Build app icon
+        run: |
+          set -euo pipefail
+          # rsvg-convert is the only reliable SVG rasteriser on a runner;
+          # iconutil then turns the size set into the .icns jpackage wants.
+          brew install librsvg
+          mkdir -p /tmp/GrKaX.iconset
+          for size in 16 32 128 256 512; do
+            rsvg-convert -w $size -h $size docs/icon.svg -o "/tmp/GrKaX.iconset/icon_${size}x${size}.png"
+            rsvg-convert -w $((size * 2)) -h $((size * 2)) docs/icon.svg \
+              -o "/tmp/GrKaX.iconset/icon_${size}x${size}@2x.png"
+          done
+          mkdir -p desktop/icons
+          iconutil -c icns /tmp/GrKaX.iconset -o desktop/icons/app.icns
+          ls -l desktop/icons/
+
       - name: Validate generated configs against the core
         working-directory: desktop
         run: |

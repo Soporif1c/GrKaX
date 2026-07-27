@@ -32,6 +32,7 @@ import com.grka.xray.desktop.core.CoreRuntime
 import com.grka.xray.desktop.core.XrayProcess
 import com.grka.xray.desktop.data.Store
 import com.grka.xray.desktop.net.UpdateChecker
+import com.grka.xray.desktop.platform.LaunchAgent
 import com.grka.xray.desktop.ui.SectionCard
 import com.grka.xray.desktop.ui.SegmentedSwitch
 import com.grka.xray.desktop.ui.SettingRow
@@ -61,6 +62,11 @@ fun SettingsScreen() {
     var httpPort by remember { mutableStateOf(Store.httpPort.toString()) }
     var configTemplate by remember { mutableStateOf(Store.configTemplate) }
     var updateStatus by remember { mutableStateOf<String?>(null) }
+    // The plist on disk is the truth here, not our stored preference — the user
+    // may have removed it by hand.
+    var launchAtLogin by remember { mutableStateOf(LaunchAgent.isEnabled) }
+    var autoConnect by remember { mutableStateOf(Store.autoConnect) }
+    var launchError by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -228,6 +234,43 @@ fun SettingsScreen() {
             )
             Text(
                 "HWID этого компьютера: ${Utils.hwid}",
+                style = MaterialTheme.typography.bodySmall,
+                color = cs.onSurfaceVariant,
+            )
+        }
+
+        SectionCard("Запуск") {
+            SettingRow(
+                title = "Запускать при входе в систему",
+                subtitle = if (LaunchAgent.isSupported) {
+                    "Через LaunchAgent в ~/Library/LaunchAgents"
+                } else {
+                    "Доступно только для приложения, установленного в «Программы»"
+                },
+                checked = launchAtLogin,
+                onCheckedChange = { wanted ->
+                    val error = LaunchAgent.setEnabled(wanted)
+                    if (error == null) {
+                        launchAtLogin = wanted
+                        Store.launchAtLogin = wanted
+                        launchError = null
+                    } else {
+                        launchError = error
+                    }
+                },
+            )
+            SettingRow(
+                title = "Подключаться при старте",
+                subtitle = "Сразу поднимать соединение с выбранным сервером",
+                checked = autoConnect,
+                onCheckedChange = { autoConnect = it; Store.autoConnect = it },
+            )
+            if (launchError != null) {
+                Text(launchError.orEmpty(), style = MaterialTheme.typography.bodySmall, color = cs.error)
+            }
+            Text(
+                "Окно закрывается в меню-бар — соединение продолжает работать. " +
+                    "Полный выход — через иконку в меню-баре.",
                 style = MaterialTheme.typography.bodySmall,
                 color = cs.onSurfaceVariant,
             )

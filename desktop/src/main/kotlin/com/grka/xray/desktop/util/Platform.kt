@@ -43,5 +43,16 @@ object Platform {
 
     fun bundled(name: String): File = File(bundledResourcesDir, name)
 
+    /**
+     * The `.app` bundle we are running from, if any. Resources live at
+     * `<App>/Contents/app/resources`, so the bundle is three levels up. Null
+     * during development, where there is no bundle.
+     */
+    val appBundle: File? by lazy {
+        System.getProperty("compose.application.resources.dir")
+            ?.let { File(it).parentFile?.parentFile?.parentFile }
+            ?.takeIf { it.name.endsWith(".app") }
+    }
+
     fun runtimePath(name: String): Path = File(runtimeDir, name).toPath()
 }

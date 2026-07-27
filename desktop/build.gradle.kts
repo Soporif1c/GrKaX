@@ -76,11 +76,25 @@ compose.desktop {
                 // quarantine flag manually. Swap in a Developer ID here when
                 // the account exists.
                 infoPlist {
+                    // The grkax:// scheme lets a subscription page carry an
+                    // "add to GrKa X" button, same as on Android. macOS
+                    // delivers it as an AppleEvent; see platform/DeepLink.kt.
                     extraKeysRawXml = """
                         <key>LSMinimumSystemVersion</key>
                         <string>12.0</string>
                         <key>LSUIElement</key>
                         <false/>
+                        <key>CFBundleURLTypes</key>
+                        <array>
+                          <dict>
+                            <key>CFBundleURLName</key>
+                            <string>com.grka.xray.desktop.deeplink</string>
+                            <key>CFBundleURLSchemes</key>
+                            <array>
+                              <string>grkax</string>
+                            </array>
+                          </dict>
+                        </array>
                     """.trimIndent()
                 }
             }
