@@ -66,7 +66,9 @@ object CoreRuntime {
             }
 
             val netError = withContext(Dispatchers.IO) {
-                NetworkController.enable(Store.networkMode, Store.socksPort, Store.httpPort)
+                NetworkController.enable(
+                    Store.networkMode, Store.socksPort, Store.httpPort, profile.server,
+                )
             }
             if (netError != null) {
                 withContext(Dispatchers.IO) { XrayProcess.stop() }

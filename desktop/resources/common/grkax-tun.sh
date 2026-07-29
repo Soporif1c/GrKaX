@@ -7,6 +7,7 @@
 # replaced by a signed launchd daemon or a NetworkExtension provider.
 #
 #   grkax-tun.sh up   <tun2socks-bin> <socks-port> <interface> <service> <dns>
+#                     <gateway> [server-ip...]
 #   grkax-tun.sh down <service>
 
 set -e
@@ -15,6 +16,8 @@ STATE_DIR="/var/run/grkax"
 PID_FILE="$STATE_DIR/tun2socks.pid"
 DEV_FILE="$STATE_DIR/tun.dev"
 LOG_FILE="$STATE_DIR/tun2socks.log"
+# Host routes we installed, so `down` removes exactly those and nothing else.
+ROUTES_FILE="$STATE_DIR/routes"
 
 # 198.18.0.0/15 is the RFC 2544 benchmarking range — safe to steal, unlike a
 # 10.x address a home router might already be using.
@@ -57,7 +60,9 @@ pick_device() {
 }
 
 cmd_up() {
-    BIN="$1"; PORT="$2"; IFACE="$3"; SERVICE="$4"; DNS="$5"
+    BIN="$1"; PORT="$2"; IFACE="$3"; SERVICE="$4"; DNS="$5"; GATEWAY="$6"
+    # Whatever is left are the proxy server addresses to keep off the tunnel.
+    shift 6 2>/dev/null || shift $#
 
     # We run as root here, so repair the executable bit rather than refusing:
     # packaging into the .app does not carry it through reliably.
@@ -89,6 +94,18 @@ cmd_up() {
 
     ifconfig "$DEV" "$TUN_ADDR" "$TUN_PEER" up
 
+    # The /1 routes below swallow every destination — including the core's own
+    # connection to the proxy server, which would then be dialled through the
+    # tunnel that connection is supposed to carry. Pin the server to the
+    # physical gateway first: a /32 outranks a /1, and going first means the
+    # loop never exists, not even for the moment between the two calls.
+    : > "$ROUTES_FILE"
+    for ip in "$@"; do
+        [ -n "$ip" ] || continue
+        route -n add -host "$ip" "$GATEWAY" >/dev/null 2>&1 || true
+        echo "$ip" >> "$ROUTES_FILE"
+    done
+
     # Two /1 routes outrank the existing default route without deleting it,
     # so tearing the tunnel down cannot strand the machine offline.
     route -n add -net 0.0.0.0/1 "$TUN_PEER" >/dev/null
@@ -108,6 +125,16 @@ cmd_down() {
 
     route -n delete -net 0.0.0.0/1 "$TUN_PEER" >/dev/null 2>&1 || true
     route -n delete -net 128.0.0.0/1 "$TUN_PEER" >/dev/null 2>&1 || true
+
+    # Drop the server pins we added — leaving them behind would quietly keep
+    # sending that one address past a gateway that may not be current later.
+    if [ -f "$ROUTES_FILE" ]; then
+        while IFS= read -r ip; do
+            [ -n "$ip" ] || continue
+            route -n delete -host "$ip" >/dev/null 2>&1 || true
+        done < "$ROUTES_FILE"
+        rm -f "$ROUTES_FILE"
+    fi
 
     if [ -n "$SERVICE" ]; then
         /usr/sbin/networksetup -setdnsservers "$SERVICE" Empty || true
