@@ -18,6 +18,8 @@ DEV_FILE="$STATE_DIR/tun.dev"
 LOG_FILE="$STATE_DIR/tun2socks.log"
 # Host routes we installed, so `down` removes exactly those and nothing else.
 ROUTES_FILE="$STATE_DIR/routes"
+# Physical interface the tunnel was built on, needed to undo its scoped route.
+IFACE_FILE="$STATE_DIR/iface"
 
 # 198.18.0.0/15 is the RFC 2544 benchmarking range — safe to steal, unlike a
 # 10.x address a home router might already be using.
@@ -106,6 +108,16 @@ cmd_up() {
         echo "$ip" >> "$ROUTES_FILE"
     done
 
+    # Anything that wants to bypass the tunnel — the core's own direct outbound,
+    # above all — does it by binding its socket to the physical interface with
+    # IP_BOUND_IF. That only works if the interface has a route in its own
+    # scope, and macOS creates those by itself for VPNs it manages through
+    # NetworkExtension. It knows nothing about a utun raised by hand, so the
+    # scope stays empty and every bound connect() is refused outright, in
+    # microseconds. Give the interface its scoped default and they work again.
+    echo "$IFACE" > "$IFACE_FILE"
+    route -n add -ifscope "$IFACE" default "$GATEWAY" >/dev/null 2>&1 || true
+
     # Two /1 routes outrank the existing default route without deleting it,
     # so tearing the tunnel down cannot strand the machine offline.
     route -n add -net 0.0.0.0/1 "$TUN_PEER" >/dev/null
@@ -125,6 +137,13 @@ cmd_down() {
 
     route -n delete -net 0.0.0.0/1 "$TUN_PEER" >/dev/null 2>&1 || true
     route -n delete -net 128.0.0.0/1 "$TUN_PEER" >/dev/null 2>&1 || true
+
+    # The scoped default goes with the tunnel: left behind, it would keep
+    # pointing at a gateway that may not be the right one on the next network.
+    if [ -f "$IFACE_FILE" ]; then
+        route -n delete -ifscope "$(cat "$IFACE_FILE")" default >/dev/null 2>&1 || true
+        rm -f "$IFACE_FILE"
+    fi
 
     # Drop the server pins we added — leaving them behind would quietly keep
     # sending that one address past a gateway that may not be current later.
