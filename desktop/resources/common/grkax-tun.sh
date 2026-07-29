@@ -21,6 +21,29 @@ LOG_FILE="$STATE_DIR/tun2socks.log"
 TUN_ADDR="198.18.0.1"
 TUN_PEER="198.18.0.2"
 
+# tun2socks logs one JSON object per line. The `msg` field is the only part a
+# user can act on, so lift it out and drop the stacktrace — this text ends up
+# verbatim in the app's error banner, via osascript's stderr.
+log_tail() {
+    if [ -s "$LOG_FILE" ]; then
+        tail -3 "$LOG_FILE" \
+            | sed 's/,"stacktrace":".*//' \
+            | sed -n 's/.*"msg":"//p' \
+            | sed 's/"}*$//; s/\\"/"/g' \
+            | tr '\n' ' '
+    fi
+}
+
+# Same, but always says something — used where the log may be empty.
+why() {
+    reason=$(log_tail)
+    if [ -n "$reason" ]; then
+        printf '%s(see %s)' "$reason" "$LOG_FILE"
+    else
+        printf 'see %s' "$LOG_FILE"
+    fi
+}
+
 pick_device() {
     i=200
     while [ "$i" -lt 250 ]; do
@@ -49,16 +72,20 @@ cmd_up() {
     # exits before creating the device.
     "$BIN" -device "$DEV" -proxy "socks5://127.0.0.1:$PORT" -interface "$IFACE" \
         -loglevel warn > "$LOG_FILE" 2>&1 &
-    echo $! > "$PID_FILE"
+    TUN_PID=$!
+    echo "$TUN_PID" > "$PID_FILE"
 
-    # tun2socks creates the interface; give it a moment to show up.
+    # tun2socks creates the interface; give it a moment to show up. A process
+    # that already died is not worth waiting on — bad arguments fail this way,
+    # and the timeout below would hide the reason behind "never appeared".
     n=0
     while [ "$n" -lt 50 ]; do
         ifconfig "$DEV" >/dev/null 2>&1 && break
+        kill -0 "$TUN_PID" 2>/dev/null || { echo "tun2socks exited: $(why)" >&2; exit 1; }
         sleep 0.1
         n=$((n + 1))
     done
-    ifconfig "$DEV" >/dev/null 2>&1 || { echo "$DEV never appeared — see $LOG_FILE" >&2; exit 1; }
+    ifconfig "$DEV" >/dev/null 2>&1 || { echo "$DEV never appeared: $(why)" >&2; exit 1; }
 
     ifconfig "$DEV" "$TUN_ADDR" "$TUN_PEER" up
 
