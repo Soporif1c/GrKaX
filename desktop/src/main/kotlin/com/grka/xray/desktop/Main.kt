@@ -17,6 +17,7 @@ import com.grka.xray.desktop.core.ConnState
 import com.grka.xray.desktop.core.CoreRuntime
 import com.grka.xray.desktop.data.Store
 import com.grka.xray.desktop.platform.DeepLink
+import com.grka.xray.desktop.platform.NetworkController
 import com.grka.xray.desktop.ui.App
 import com.grka.xray.desktop.ui.TrayIconPainter
 import kotlinx.coroutines.launch
@@ -27,6 +28,10 @@ fun main() {
     // A crashed or force-quit app must never leave the system proxy pointing at
     // a core that is no longer running — that would take the machine offline.
     Runtime.getRuntime().addShutdownHook(Thread { CoreRuntime.shutdownHook() })
+    // The hook above only runs when the JVM gets to exit on its own terms. If
+    // the last run was killed outright, its routes are still in place and the
+    // machine is offline right now — so repair before doing anything else.
+    NetworkController.cleanStale(Store.socksPort)
 
     application {
         val windowState = rememberWindowState(size = DpSize(1020.dp, 720.dp))

@@ -4,6 +4,7 @@ import com.grka.xray.desktop.core.CoreRuntime
 import com.grka.xray.desktop.data.Store
 import com.grka.xray.desktop.util.Platform
 import com.grka.xray.desktop.util.Shell
+import java.io.File
 import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.UnknownHostException
@@ -24,6 +25,9 @@ import java.net.UnknownHostException
  * before it can dial it, and the lookup would go through the tunnel.
  */
 object TunMode {
+
+    /** Runtime state written by the helper script; the path must match it. */
+    private val stateDir = File("/var/run/grkax")
 
     @Volatile
     private var appliedService: String? = null
@@ -138,6 +142,31 @@ object TunMode {
     } catch (e: UnknownHostException) {
         CoreRuntime.log("Не удалось разрешить $host: ${e.message}")
         emptyList()
+    }
+
+    /**
+     * Tears down a tunnel left behind by a run that never cleaned up after
+     * itself. The shutdown hook handles a normal exit, but a SIGKILL or a crash
+     * leaves the /1 routes and the DNS override in place with no tun2socks
+     * behind them — every packet then goes to a tunnel that no longer exists,
+     * and the machine stays offline until someone removes the routes by hand.
+     *
+     * Recognised by the state files outliving the process they describe. A live
+     * pid means a tunnel that is genuinely running, which is left alone.
+     */
+    fun cleanStale() {
+        if (!Platform.isMac) return
+        if (!File(stateDir, "tun.dev").isFile) return
+
+        val pid = File(stateDir, "tun2socks.pid")
+            .takeIf { it.isFile }
+            ?.runCatching { readText().trim().toLong() }
+            ?.getOrNull()
+        val alive = pid != null && ProcessHandle.of(pid).map { it.isAlive }.orElse(false)
+        if (alive) return
+
+        CoreRuntime.log("Найден туннель от прошлого запуска — снимаю, чтобы вернуть сеть")
+        disable()
     }
 
     fun disable() {

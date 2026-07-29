@@ -50,6 +50,31 @@ object SystemProxy {
         return null
     }
 
+    /**
+     * Turns off a proxy left pointing at a core that is no longer running —
+     * the same crash-and-SIGKILL gap [TunMode.cleanStale] covers, with the
+     * milder symptom of everything failing to connect rather than the routes
+     * being wrong.
+     *
+     * Deliberately narrow: it must be our own loopback address and port, with
+     * nothing listening there. Another client's proxy, or our own from a second
+     * running instance, is left untouched.
+     */
+    fun cleanStale(socksPort: Int) {
+        val service = MacNet.activeService() ?: return
+        val current = Shell.capture(NETWORKSETUP, "-getsocksfirewallproxy", service)
+        val ours = current.contains("Enabled: Yes") &&
+            current.contains("127.0.0.1") &&
+            current.contains("Port: $socksPort")
+        if (!ours) return
+        if (Shell.capture("/usr/sbin/lsof", "-nP", "-iTCP:$socksPort", "-sTCP:LISTEN").isNotBlank()) {
+            return
+        }
+
+        CoreRuntime.log("Найден системный прокси от прошлого запуска — выключаю")
+        disable()
+    }
+
     fun disable() {
         val service = appliedService ?: MacNet.activeService() ?: return
         appliedService = null

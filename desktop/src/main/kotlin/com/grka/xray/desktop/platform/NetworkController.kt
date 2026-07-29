@@ -26,6 +26,17 @@ object NetworkController {
         return error
     }
 
+    /**
+     * Undo plumbing a previous run left behind. Call once at startup, before
+     * anything else touches the network: until it runs, a crash from last time
+     * may still be holding the machine offline.
+     */
+    fun cleanStale(socksPort: Int) {
+        if (!Platform.isMac) return
+        TunMode.cleanStale()
+        SystemProxy.cleanStale(socksPort)
+    }
+
     fun disable() {
         when (active) {
             AppConfig.NET_TUN -> TunMode.disable()
