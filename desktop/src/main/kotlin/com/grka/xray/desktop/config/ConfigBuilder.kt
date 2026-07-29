@@ -103,7 +103,8 @@ object ConfigBuilder {
         val outbounds = (cfg["outbounds"] as? JsonArray) ?: JsonArray(emptyList())
         val reordered = JsonArray(
             ensureFallbackOutbounds(reorderOutbounds(outbounds, p.proxyTag))
-                .map { bindToInterface(it as JsonObject, s.bindInterface) }
+                .map { pinOutbound(it as JsonObject, s) }
+                .map { bindToInterface(it, s.bindInterface) }
         )
 
         val root = buildJsonObject {
@@ -204,7 +205,10 @@ object ConfigBuilder {
     // ---------------- dns ----------------
 
     private fun defaultDns(s: SettingsSnapshot): JsonObject = buildJsonObject {
-        putJsonObject("hosts") { put("domain:googleapis.cn", "googleapis.com") }
+        putJsonObject("hosts") {
+            put("domain:googleapis.cn", "googleapis.com")
+            putServerPins(s)
+        }
         putJsonArray("servers") {
             add(s.remoteDns)
             if (s.mode == AppConfig.MODE_RULE && s.routingPreset == AppConfig.ROUTE_BYPASS_RU) {
@@ -217,14 +221,36 @@ object ConfigBuilder {
         }
     }
 
-    /** Keeps the template DNS but guarantees at least one resolver. */
+    /**
+     * Keeps the template DNS but guarantees at least one resolver, and adds the
+     * server pins — a template that resolves its own servers through the tunnel
+     * deadlocks exactly like the default one would.
+     */
     private fun ensureDns(dns: JsonObject?, s: SettingsSnapshot): JsonObject {
         if (dns == null) return defaultDns(s)
         val servers = dns["servers"] as? JsonArray
-        if (servers != null && servers.isNotEmpty()) return dns
         return buildJsonObject {
-            for ((k, v) in dns) if (k != "servers") put(k, v)
-            putJsonArray("servers") { add(s.remoteDns) }
+            for ((k, v) in dns) if (k != "servers" && k != "hosts") put(k, v)
+            putJsonObject("hosts") {
+                (dns["hosts"] as? JsonObject)?.forEach { (k, v) -> put(k, v) }
+                putServerPins(s)
+            }
+            if (servers != null && servers.isNotEmpty()) {
+                put("servers", servers)
+            } else {
+                putJsonArray("servers") { add(s.remoteDns) }
+            }
+        }
+    }
+
+    /**
+     * Answers the core would otherwise have to ask the network for, at a moment
+     * when the network cannot answer. See [SettingsSnapshot.serverPins].
+     */
+    private fun kotlinx.serialization.json.JsonObjectBuilder.putServerPins(s: SettingsSnapshot) {
+        for ((host, ips) in s.serverPins) {
+            if (ips.isEmpty()) continue
+            putJsonArray(host) { ips.forEach { add(it) } }
         }
     }
 
@@ -430,24 +456,82 @@ object ConfigBuilder {
         // subscription), use it verbatim — only retagged and with legacy XHTTP
         // key names normalized — so complex transports pass through untouched.
         p.rawOutbound?.takeIf { it.isNotBlank() }?.let { raw ->
-            runCatching { rebuildFromRaw(raw) }.getOrNull()?.let { return it }
+            runCatching { rebuildFromRaw(raw, s) }.getOrNull()?.let { return it }
         }
         return buildFlattenedOutbound(p, s)
     }
 
     /** Re-emits a stored outbound with tag "proxy" and normalized XHTTP keys. */
-    private fun rebuildFromRaw(raw: String): JsonObject {
+    private fun rebuildFromRaw(raw: String, s: SettingsSnapshot): JsonObject {
         val obj = json.parseToJsonElement(raw).jsonObject
+        val stream = obj["streamSettings"] as? JsonObject
         return buildJsonObject {
             put("tag", "proxy")
             for ((k, v) in obj) {
                 when {
                     k == "tag" -> {}
                     k == "streamSettings" && v is JsonObject -> put("streamSettings", normalizeStream(v))
+                    k == "settings" && v is JsonObject -> put("settings", pinServerAddress(v, stream, s))
                     else -> put(k, v)
                 }
             }
         }
+    }
+
+    /**
+     * Swaps the server hostname inside a verbatim outbound for the address
+     * resolved before the tunnel went up. Everything else is left exactly as the
+     * subscription sent it — that is the whole point of this path — but the name
+     * has to go: the core would resolve it through its own resolver, which in
+     * TUN mode is reachable only through the connection this dial creates.
+     *
+     * Skipped unless the handshake still knows which name to present. Replacing
+     * the address where no serverName is set would send an IP as the SNI and
+     * break TLS, which is worse than the slow failure it fixes.
+     */
+    private fun pinServerAddress(
+        settings: JsonObject,
+        stream: JsonObject?,
+        s: SettingsSnapshot,
+    ): JsonObject {
+        if (!keepsServerName(stream)) return settings
+        return buildJsonObject {
+            for ((k, v) in settings) {
+                if ((k == "vnext" || k == "servers") && v is JsonArray) {
+                    putJsonArray(k) { v.forEach { add(withPinnedAddress(it, s)) } }
+                } else {
+                    put(k, v)
+                }
+            }
+        }
+    }
+
+    private fun withPinnedAddress(entry: JsonElement, s: SettingsSnapshot): JsonElement {
+        val obj = entry as? JsonObject ?: return entry
+        val host = (obj["address"] as? JsonElement)?.jsonPrimitive?.contentOrNull ?: return entry
+        val pinned = s.serverPins[host]?.firstOrNull() ?: return entry
+        return buildJsonObject {
+            for ((k, v) in obj) if (k == "address") put("address", pinned) else put(k, v)
+        }
+    }
+
+    /** [pinServerAddress] applied to a whole outbound object. */
+    private fun pinOutbound(o: JsonObject, s: SettingsSnapshot): JsonObject {
+        val settings = o["settings"] as? JsonObject ?: return o
+        val pinned = pinServerAddress(settings, o["streamSettings"] as? JsonObject, s)
+        if (pinned == settings) return o
+        return buildJsonObject {
+            for ((k, v) in o) if (k == "settings") put("settings", pinned) else put(k, v)
+        }
+    }
+
+    /** True when the handshake carries its own name, or needs none at all. */
+    private fun keepsServerName(stream: JsonObject?): Boolean {
+        val security = (stream?.get("security") as? JsonElement)?.jsonPrimitive?.contentOrNull
+        if (security == null || security == "none") return true
+        val sec = (stream?.get("tlsSettings") ?: stream?.get("realitySettings")) as? JsonObject
+        val name = (sec?.get("serverName") as? JsonElement)?.jsonPrimitive?.contentOrNull
+        return !name.isNullOrBlank()
     }
 
     private fun normalizeStream(ss: JsonObject): JsonObject = buildJsonObject {
@@ -485,7 +569,7 @@ object ConfigBuilder {
                 "vless", "vmess" -> {
                     putJsonArray("vnext") {
                         addJsonObject {
-                            put("address", p.server)
+                            put("address", serverAddress(p, s))
                             put("port", p.port)
                             putJsonArray("users") {
                                 addJsonObject {
@@ -509,7 +593,7 @@ object ConfigBuilder {
                 "trojan" -> {
                     putJsonArray("servers") {
                         addJsonObject {
-                            put("address", p.server)
+                            put("address", serverAddress(p, s))
                             put("port", p.port)
                             put("password", p.uuid)
                             put("level", 8)
@@ -520,7 +604,7 @@ object ConfigBuilder {
                 "shadowsocks" -> {
                     putJsonArray("servers") {
                         addJsonObject {
-                            put("address", p.server)
+                            put("address", serverAddress(p, s))
                             put("port", p.port)
                             put("method", p.method?.takeIf { it.isNotBlank() } ?: "aes-256-gcm")
                             put("password", p.uuid)
@@ -650,6 +734,18 @@ object ConfigBuilder {
             if (security == "tls") put("tlsSettings", securityObj) else put("realitySettings", securityObj)
         }
     }
+
+    /**
+     * The address the core actually dials. A hostname is replaced by the address
+     * resolved before the tunnel went up: left as a name, the core would look it
+     * up itself, and in TUN mode its resolver sits behind the very connection
+     * this dial is meant to open. Only bare-IP servers escaped that deadlock.
+     *
+     * Safe for TLS: [resolveSni] derives the SNI from the profile, not from this
+     * field, so the handshake still presents the hostname.
+     */
+    private fun serverAddress(p: Profile, s: SettingsSnapshot): String =
+        s.serverPins[p.server]?.firstOrNull() ?: p.server
 
     /**
      * Final SNI: explicit sni param, else a domain-valued transport host, else

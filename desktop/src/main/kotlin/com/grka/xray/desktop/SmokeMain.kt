@@ -17,7 +17,12 @@ import java.io.File
 fun main(args: Array<String>) {
     val outDir = File(args.firstOrNull() ?: ".").apply { mkdirs() }
 
-    fun settings(mode: String, iface: String?) = SettingsSnapshot(
+    // What TunMode resolves before raising the tunnel. 203.0.113.0/24 is the
+    // documentation range, so a config that leaks out of CI reaches nothing.
+    val pins = mapOf("example.com" to listOf("203.0.113.10"))
+
+    fun settings(mode: String, iface: String?, hostPins: Map<String, List<String>> = emptyMap()) =
+        SettingsSnapshot(
         socksPort = 10808,
         httpPort = 10809,
         apiPort = 10810,
@@ -32,6 +37,7 @@ fun main(args: Array<String>) {
         mux = false,
         logLevel = "warning",
         bindInterface = iface,
+        serverPins = hostPins,
     )
 
     val link = "vless://11111111-2222-3333-4444-555555555555@example.com:443" +
@@ -73,7 +79,8 @@ fun main(args: Array<String>) {
 
     for ((name, profileAndMode, iface) in cases) {
         val (profile, mode) = profileAndMode
-        val config = ConfigBuilder.build(profile, settings(mode, iface))
+        // Pins only exist in TUN mode, which is exactly where `iface` is set.
+        val config = ConfigBuilder.build(profile, settings(mode, iface, if (iface != null) pins else emptyMap()))
         File(outDir, "$name.json").writeText(config)
         println("wrote $name.json (${config.length} bytes)")
     }
@@ -88,6 +95,40 @@ fun main(args: Array<String>) {
     val tunConfig = File(outDir, "sub-tun.json").readText()
     check(tunConfig.contains("\"interface\":\"en0\"")) { "tun mode did not pin the interface" }
     println("tun interface pinning: ok")
+
+    // A server named by hostname has to reach the core as an address it already
+    // knows: in TUN mode the core's resolver is behind the tunnel, and asking it
+    // deadlocks. Both the built-in DNS and the subscription's own must carry it.
+    for (name in listOf("link-tun", "sub-tun")) {
+        val cfg = File(outDir, "$name.json").readText()
+        check(cfg.contains("\"example.com\":[\"203.0.113.10\"]")) {
+            "$name lost the server pin — hostname servers will not connect"
+        }
+    }
+    check(!File(outDir, "sub-rule.json").readText().contains("203.0.113.10")) {
+        "server pin leaked into a non-TUN config"
+    }
+    println("server DNS pinning: ok")
+
+    // The dial has to target the resolved address while the handshake still
+    // presents the hostname — swap one and lose the other and TLS fails.
+    // Both shapes matter. A subscription that ships a ready-made outbound takes
+    // the verbatim path, and that is precisely the one that shipped broken:
+    // everything was preserved byte for byte, including the hostname the core
+    // could not resolve.
+    for (name in listOf("link-tun", "sub-tun")) {
+        val cfg = File(outDir, "$name.json").readText()
+        check(cfg.contains("\"address\":\"203.0.113.10\"")) {
+            "$name still dials the hostname; the core would have to resolve it"
+        }
+        check(cfg.contains("\"serverName\":\"www.microsoft.com\"")) {
+            "$name lost its SNI while swapping the address"
+        }
+    }
+    check(File(outDir, "link-rule.json").readText().contains("\"address\":\"example.com\"")) {
+        "non-TUN config should keep dialling the hostname"
+    }
+    println("server address substitution: ok")
 }
 
 private fun <T : Any> requireNonNull(value: T?, message: String): T =

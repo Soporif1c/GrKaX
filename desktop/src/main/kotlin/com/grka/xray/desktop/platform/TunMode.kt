@@ -17,13 +17,11 @@ import java.net.UnknownHostException
  * the work happens in [grkax-tun.sh] behind a single authorization prompt.
  *
  * The loop hazard is the core's own connection to the proxy server being routed
- * back into the tunnel it feeds. `sockopt.interface` in ConfigBuilder was meant
- * to prevent it, but on macOS it does not: with the tunnel up the core opened no
- * outbound socket at all, and a socket bound to the physical interface while the
- * route points at the tunnel is refused by the kernel outright. So the server is
- * pinned in the route table instead — a /32 via the physical gateway, installed
- * before the /1 routes. `sockopt.interface` is left in place as it is harmless
- * and still correct wherever the core does honour it.
+ * back into the tunnel it feeds. Two things keep it out, and both are needed:
+ * `sockopt.interface` in ConfigBuilder, which binds outbound sockets to the
+ * physical interface, and the /32 route installed here before the /1 routes.
+ * The binding alone is not enough — the core has to know which address to dial
+ * before it can dial it, and the lookup would go through the tunnel.
  */
 object TunMode {
 
@@ -41,7 +39,13 @@ object TunMode {
     var physicalInterface: String? = null
         private set
 
-    fun enable(socksPort: Int, serverHost: String?): String? {
+    @Volatile
+    private var pinKey: Set<String> = emptySet()
+
+    @Volatile
+    private var pins: Map<String, List<String>> = emptyMap()
+
+    fun enable(socksPort: Int, serverHosts: List<String>): String? {
         if (!Platform.isMac) return "TUN-режим пока реализован только для macOS"
 
         val iface = MacNet.defaultInterface()
@@ -51,10 +55,12 @@ object TunMode {
         val gateway = MacNet.defaultGateway()
             ?: return "Не удалось определить шлюз — без него сервер окажется внутри туннеля"
 
-        // Resolved here, while the tunnel is still down and DNS works normally.
-        // Only IPv4: the tunnel captures IPv4 alone, so an IPv6 server is
-        // reachable regardless and needs no pin.
-        val serverIps = resolveIpv4(serverHost)
+        // Every known server is pinned, not just the selected one, so switching
+        // servers later is a core restart and nothing more — no route changes,
+        // and therefore no second password prompt. Resolved here while the
+        // tunnel is still down and DNS works normally. Only IPv4: the tunnel
+        // captures IPv4 alone, so an IPv6 server needs no pin.
+        val serverIps = serverPins(serverHosts).values.flatten().distinct()
 
         val script = Platform.bundled("grkax-tun.sh")
         if (!script.isFile) return "Не найден помощник grkax-tun.sh в бандле приложения"
@@ -84,30 +90,54 @@ object TunMode {
         if (serverIps.isEmpty()) {
             // Not fatal — an IPv6-only or unresolvable server may still work —
             // but it is the first thing to look at if nothing loads.
-            CoreRuntime.log("Внимание: адрес сервера не закреплён за $gateway, возможна петля")
+            CoreRuntime.log("Внимание: адреса серверов не закреплены за $gateway, возможна петля")
         } else {
-            CoreRuntime.log("Сервер вне туннеля: ${serverIps.joinToString(", ")} через $gateway")
+            CoreRuntime.log("Вне туннеля через $gateway: ${serverIps.joinToString(", ")}")
         }
         return null
     }
 
     /**
-     * The proxy server's IPv4 addresses. A hostname is resolved rather than
-     * passed through, because the route table takes addresses only — and by
-     * the time the tunnel is up, resolving it would mean asking through the
-     * very tunnel that cannot work until this route exists.
+     * hostname → IPv4 for every known server, for both the host routes here and
+     * the core's static DNS table.
+     *
+     * Resolved only while the tunnel is down. Once it is up, this lookup would
+     * go through the tunnel like everything else — and the tunnel cannot carry
+     * it until the server connection it is meant to establish already exists.
+     * So the answers are taken before that door closes and cached for as long
+     * as the tunnel lives, which is also what lets a mode or server switch
+     * rebuild the config without asking anything of the network.
      */
-    private fun resolveIpv4(host: String?): List<String> {
-        if (host.isNullOrBlank()) return emptyList()
-        return try {
-            InetAddress.getAllByName(host)
-                .filterIsInstance<Inet4Address>()
-                .map { it.hostAddress }
-                .distinct()
-        } catch (e: UnknownHostException) {
-            CoreRuntime.log("Не удалось разрешить адрес сервера $host: ${e.message}")
-            emptyList()
+    fun serverPins(hosts: List<String>): Map<String, List<String>> {
+        if (physicalInterface != null) return pins
+        val key = hosts.filter { it.isNotBlank() }.toSet()
+        if (key != pinKey) {
+            pins = resolveIpv4(key)
+            pinKey = key
         }
+        return pins
+    }
+
+    /**
+     * Parallel on purpose: a subscription can carry dozens of servers, and one
+     * after another a few unreachable names would stall the connect behind
+     * their DNS timeouts.
+     */
+    private fun resolveIpv4(hosts: Set<String>): Map<String, List<String>> =
+        hosts.parallelStream()
+            .map { host -> host to lookupIpv4(host) }
+            .filter { it.second.isNotEmpty() }
+            .toList()
+            .toMap()
+
+    private fun lookupIpv4(host: String): List<String> = try {
+        InetAddress.getAllByName(host)
+            .filterIsInstance<Inet4Address>()
+            .mapNotNull { it.hostAddress }
+            .distinct()
+    } catch (e: UnknownHostException) {
+        CoreRuntime.log("Не удалось разрешить $host: ${e.message}")
+        emptyList()
     }
 
     fun disable() {
@@ -115,6 +145,9 @@ object TunMode {
         val service = appliedService ?: MacNet.activeService() ?: ""
         appliedService = null
         physicalInterface = null
+        // Addresses can move between sessions; the next connect resolves afresh.
+        pinKey = emptySet()
+        pins = emptyMap()
         val script = Platform.bundled("grkax-tun.sh")
         if (!script.isFile) return
         val command = listOf("/bin/sh", script.absolutePath, "down", service)

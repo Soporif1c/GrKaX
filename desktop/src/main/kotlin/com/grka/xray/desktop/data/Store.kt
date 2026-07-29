@@ -311,5 +311,10 @@ object Store {
         } else {
             null
         },
+        serverPins = if (networkMode == AppConfig.NET_TUN) {
+            com.grka.xray.desktop.platform.TunMode.serverPins(profilesFlow.value.map { it.server })
+        } else {
+            emptyMap()
+        },
     )
 }

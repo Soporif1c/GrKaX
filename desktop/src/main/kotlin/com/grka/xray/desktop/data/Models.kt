@@ -120,4 +120,13 @@ data class SettingsSnapshot(
      * feeds, and the connection deadlocks. Null in system-proxy mode.
      */
     val bindInterface: String?,
+    /**
+     * Static hostname → IPv4 answers for the proxy servers, fed to the core's
+     * DNS as facts. In TUN mode the core cannot look these up itself: its
+     * resolver is reached through the tunnel, and the tunnel only carries
+     * traffic once the connection this lookup would establish already exists.
+     * A server given as a bare IP never needed this, which is why those were
+     * the only ones that worked. Empty in system-proxy mode.
+     */
+    val serverPins: Map<String, List<String>> = emptyMap(),
 )

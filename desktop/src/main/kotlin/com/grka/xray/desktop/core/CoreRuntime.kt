@@ -67,7 +67,10 @@ object CoreRuntime {
 
             val netError = withContext(Dispatchers.IO) {
                 NetworkController.enable(
-                    Store.networkMode, Store.socksPort, Store.httpPort, profile.server,
+                    Store.networkMode, Store.socksPort, Store.httpPort,
+                    // Every server, not just the selected one — that is what
+                    // lets switchProfile skip the tunnel and the password.
+                    Store.profilesFlow.value.map { it.server },
                 )
             }
             if (netError != null) {

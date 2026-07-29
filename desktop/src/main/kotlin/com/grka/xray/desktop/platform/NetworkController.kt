@@ -9,8 +9,8 @@ object NetworkController {
     @Volatile
     private var active: String? = null
 
-    /** [serverHost] is pinned outside the tunnel in TUN mode; see [TunMode]. */
-    fun enable(mode: String, socksPort: Int, httpPort: Int, serverHost: String?): String? {
+    /** [serverHosts] are pinned outside the tunnel in TUN mode; see [TunMode]. */
+    fun enable(mode: String, socksPort: Int, httpPort: Int, serverHosts: List<String>): String? {
         disable()
         if (!Platform.isMac) {
             // Windows/Linux plumbing is not wired up yet; the core still runs,
@@ -19,7 +19,7 @@ object NetworkController {
             return null
         }
         val error = when (mode) {
-            AppConfig.NET_TUN -> TunMode.enable(socksPort, serverHost)
+            AppConfig.NET_TUN -> TunMode.enable(socksPort, serverHosts)
             else -> SystemProxy.enable(socksPort, httpPort)
         }
         if (error == null) active = mode
