@@ -45,8 +45,10 @@ cmd_up() {
     DEV=$(pick_device) || { echo "no free utun device" >&2; exit 1; }
     echo "$DEV" > "$DEV_FILE"
 
+    # tun2socks only accepts debug|info|warn|error|silent — anything else and it
+    # exits before creating the device.
     "$BIN" -device "$DEV" -proxy "socks5://127.0.0.1:$PORT" -interface "$IFACE" \
-        -loglevel warning > "$LOG_FILE" 2>&1 &
+        -loglevel warn > "$LOG_FILE" 2>&1 &
     echo $! > "$PID_FILE"
 
     # tun2socks creates the interface; give it a moment to show up.
