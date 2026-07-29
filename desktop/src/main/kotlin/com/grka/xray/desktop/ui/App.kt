@@ -37,6 +37,14 @@ import com.grka.xray.desktop.ui.screens.LogScreen
 import com.grka.xray.desktop.ui.screens.ServersScreen
 import com.grka.xray.desktop.ui.screens.SettingsScreen
 import com.grka.xray.desktop.ui.theme.GrKaXTheme
+import com.grka.xray.desktop.util.Platform
+
+/**
+ * On macOS the window draws under its own title bar (see Main.kt), which buys
+ * the theme those extra pixels but puts the traffic lights on top of whatever
+ * sits in the corner. Everything that must stay clickable starts below this.
+ */
+private val TitleBarInset = if (Platform.isMac) 28.dp else 0.dp
 
 enum class Tab(val title: String, val glyph: String) {
     HOME("Главная", "◉"),
@@ -54,7 +62,7 @@ fun App() {
 
         Row(Modifier.fillMaxSize().background(cs.background)) {
             NavigationSidebar(selected = tab, onSelect = { tab = it })
-            Box(Modifier.weight(1f).fillMaxHeight()) {
+            Box(Modifier.weight(1f).fillMaxHeight().padding(top = TitleBarInset)) {
                 when (tab) {
                     Tab.HOME -> HomeScreen(onOpenServers = { tab = Tab.SERVERS })
                     Tab.SERVERS -> ServersScreen(onProfileChosen = { tab = Tab.HOME })
@@ -76,7 +84,12 @@ private fun NavigationSidebar(selected: Tab, onSelect: (Tab) -> Unit) {
             .width(210.dp)
             .fillMaxHeight()
             .background(cs.surface)
-            .padding(vertical = 20.dp, horizontal = 14.dp),
+            .padding(
+                top = 20.dp + TitleBarInset,
+                bottom = 20.dp,
+                start = 14.dp,
+                end = 14.dp,
+            ),
     ) {
         Text(
             text = AppConfig.APP_NAME,

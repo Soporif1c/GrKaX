@@ -20,6 +20,7 @@ import com.grka.xray.desktop.platform.DeepLink
 import com.grka.xray.desktop.platform.NetworkController
 import com.grka.xray.desktop.ui.App
 import com.grka.xray.desktop.ui.TrayIconPainter
+import com.grka.xray.desktop.util.Platform
 import kotlinx.coroutines.launch
 
 fun main() {
@@ -112,6 +113,19 @@ fun main() {
             title = "${AppConfig.APP_NAME} ${AppVersion.name}",
             state = windowState,
         ) {
+            // macOS only: let the app's own background run all the way up, so
+            // the window wears the theme instead of a grey system strip. The
+            // traffic lights stay native and keep working — only the bar behind
+            // them goes away, along with a title the sidebar already shows.
+            if (Platform.isMac) {
+                LaunchedEffect(Unit) {
+                    window.rootPane.apply {
+                        putClientProperty("apple.awt.fullWindowContent", true)
+                        putClientProperty("apple.awt.transparentTitleBar", true)
+                        putClientProperty("apple.awt.windowTitleVisible", false)
+                    }
+                }
+            }
             App()
         }
     }
