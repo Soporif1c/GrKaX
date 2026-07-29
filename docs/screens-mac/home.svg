@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="580" viewBox="0 0 900 580" font-family="SF Pro Text, Segoe UI, system-ui, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="580" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B1020"/><stop offset="1" stop-color="#0E1426"/>
+    </linearGradient>
+    <linearGradient id="acc" x1="483" y1="113" x2="627" y2="257" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8B7CFF"/><stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+    <clipPath id="win"><rect x="0" y="0" width="900" height="580" rx="14"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#win)">
+    <rect width="900" height="580" fill="url(#bg)"/>
+
+    <!-- sidebar -->
+    <rect x="0" y="0" width="210" height="580" fill="#131A31"/>
+    <g>
+      <circle cx="24" cy="24" r="6" fill="#FF5F57"/>
+      <circle cx="44" cy="24" r="6" fill="#FEBC2E"/>
+      <circle cx="64" cy="24" r="6" fill="#28C840"/>
+    </g>
+    <text x="24" y="80" fill="#E7EAF6" font-size="19" font-weight="700">GrKa X</text>
+    <text x="24" y="100" fill="#8B7CFF" font-size="12" font-weight="600">Подключено</text>
+
+    <rect x="12" y="130" width="186" height="38" rx="10" fill="#2C2A5E"/>
+    <text x="28" y="154" fill="#DCD6FF" font-size="13">◉</text>
+    <text x="50" y="154" fill="#DCD6FF" font-size="13" font-weight="600">Главная</text>
+
+    <text x="28" y="200" fill="#A6ADCE" font-size="13">☰</text>
+    <text x="50" y="200" fill="#A6ADCE" font-size="13">Серверы</text>
+
+    <text x="28" y="246" fill="#A6ADCE" font-size="13">⚙</text>
+    <text x="50" y="246" fill="#A6ADCE" font-size="13">Настройки</text>
+
+    <text x="28" y="292" fill="#A6ADCE" font-size="13">▤</text>
+    <text x="50" y="292" fill="#A6ADCE" font-size="13">Логи</text>
+
+    <text x="24" y="556" fill="#5A617A" font-size="10">версия 0.1.0</text>
+
+    <!-- network mode chip -->
+    <rect x="425" y="34" width="260" height="28" rx="14" fill="#1C2444"/>
+    <text x="555" y="53" fill="#A6ADCE" font-size="11" text-anchor="middle">Режим сети: системный прокси</text>
+
+    <!-- power button -->
+    <circle cx="555" cy="185" r="72" fill="#131A31" stroke="#1C2444" stroke-width="1"/>
+    <circle cx="555" cy="185" r="72" fill="none" stroke="url(#acc)" stroke-width="5"/>
+    <g stroke="#8B7CFF" stroke-width="6" stroke-linecap="round" fill="none">
+      <path d="M530 169 A33 33 0 1 0 580 169"/>
+      <path d="M555 157 V188"/>
+    </g>
+
+    <text x="555" y="291" fill="#8B7CFF" font-size="17" font-weight="700" text-anchor="middle">Защищено</text>
+    <text x="555" y="313" fill="#A6ADCE" font-size="13" text-anchor="middle" font-variant-numeric="tabular-nums">00:14:32</text>
+
+    <!-- traffic mode switch (the Karing-style one, right under the button) -->
+    <rect x="390" y="336" width="330" height="44" rx="12" fill="#1C2444"/>
+    <rect x="396" y="342" width="106" height="32" rx="9" fill="#8B7CFF"/>
+    <text x="449" y="363" fill="#0B1020" font-size="12" font-weight="700" text-anchor="middle">Правила</text>
+    <text x="555" y="363" fill="#A6ADCE" font-size="12" text-anchor="middle">Глобально</text>
+    <text x="661" y="363" fill="#A6ADCE" font-size="12" text-anchor="middle">Прямое</text>
+    <text x="555" y="400" fill="#5A617A" font-size="11" text-anchor="middle">Маршруты из подписки, шаблона или встроенного набора правил</text>
+
+    <!-- selected server -->
+    <rect x="246" y="420" width="618" height="62" rx="16" fill="#131A31"/>
+    <circle cx="272" cy="451" r="5" fill="#8B7CFF"/>
+    <text x="290" y="446" fill="#E7EAF6" font-size="14" font-weight="600">Netherlands · Amsterdam</text>
+    <text x="290" y="466" fill="#A6ADCE" font-size="11">VLESS · XHTTP · REALITY · nl-01.example.net:443</text>
+    <text x="800" y="456" fill="#22D3EE" font-size="12" font-weight="600">86 мс</text>
+    <text x="845" y="456" fill="#8B7CFF" font-size="12" font-weight="600" text-anchor="end">Пинг</text>
+
+    <!-- stats -->
+    <rect x="246" y="498" width="147" height="64" rx="14" fill="#131A31"/>
+    <text x="264" y="521" fill="#A6ADCE" font-size="10">Отдача</text>
+    <text x="264" y="544" fill="#F471B5" font-size="15" font-weight="700">0.9 MB/s</text>
+
+    <rect x="403" y="498" width="147" height="64" rx="14" fill="#131A31"/>
+    <text x="421" y="521" fill="#A6ADCE" font-size="10">Загрузка</text>
+    <text x="421" y="544" fill="#22D3EE" font-size="15" font-weight="700">12.4 MB/s</text>
+
+    <rect x="560" y="498" width="147" height="64" rx="14" fill="#131A31"/>
+    <text x="578" y="521" fill="#A6ADCE" font-size="10">Всего ↑</text>
+    <text x="578" y="544" fill="#E7EAF6" font-size="15" font-weight="700">240 MB</text>
+
+    <rect x="717" y="498" width="147" height="64" rx="14" fill="#131A31"/>
+    <text x="735" y="521" fill="#A6ADCE" font-size="10">Всего ↓</text>
+    <text x="735" y="544" fill="#E7EAF6" font-size="15" font-weight="700">1.8 GB</text>
+  </g>
+  <rect x="0.5" y="0.5" width="899" height="579" rx="14" fill="none" stroke="#2A3352" stroke-width="1"/>
+</svg>

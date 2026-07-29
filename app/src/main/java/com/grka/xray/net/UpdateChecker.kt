@@ -78,8 +78,14 @@ object UpdateChecker {
 
                 val body = resp.body?.string().orEmpty()
                 val releases = json.parseToJsonElement(body).jsonArray.mapNotNull { it as? JsonObject }
-                val obj = releases.firstOrNull { it["draft"]?.jsonPrimitive?.booleanOrNull != true }
-                    ?: return@withContext Result.Error("No releases published yet")
+                // The repo also ships macOS releases, which carry no APK. Take
+                // the newest release that actually has one, or the updater
+                // would offer a build it cannot install — and a tag like
+                // "mac-v0.1.0" even parses as *newer* than 0.1.3.
+                val obj = releases.firstOrNull {
+                    it["draft"]?.jsonPrimitive?.booleanOrNull != true &&
+                        pickApk(it["assets"] as? JsonArray) != null
+                } ?: return@withContext Result.Error("No releases published yet")
                 val tag = obj["tag_name"]?.jsonPrimitive?.content.orEmpty()
                 val htmlUrl = obj["html_url"]?.jsonPrimitive?.content ?: "https://github.com/$REPO/releases"
                 val notes = obj["body"]?.jsonPrimitive?.content.orEmpty()
