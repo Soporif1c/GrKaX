@@ -114,13 +114,29 @@ object CoreRuntime {
         Store.mode = mode
         if (state.value != ConnState.CONNECTED) return
         val profile = Store.selectedProfile() ?: return
+        reload(profile, "Режим → ${modeLabel(mode)}")
+    }
+
+    /**
+     * Switches to [profile]. A live connection follows it over without touching
+     * the tunnel: every known server was pinned outside it when the tunnel came
+     * up, so the new one is already reachable and no password is needed.
+     */
+    suspend fun switchProfile(profile: Profile) {
+        Store.selectProfile(profile.id)
+        if (state.value != ConnState.CONNECTED) return
+        reload(profile, "Сервер → ${profile.name}")
+    }
+
+    /** Rebuilds the config and relaunches the core, leaving the plumbing alone. */
+    private suspend fun reload(profile: Profile, reason: String) {
         lock.withLock {
             val error = withContext(Dispatchers.IO) { startCore(profile) }
             if (error != null) {
                 fail(error)
                 withContext(Dispatchers.IO) { NetworkController.disable() }
             } else {
-                log("Mode → ${modeLabel(mode)}")
+                log(reason)
             }
         }
     }

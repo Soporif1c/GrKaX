@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.grka.xray.desktop.config.LinkParser
+import com.grka.xray.desktop.core.CoreRuntime
 import com.grka.xray.desktop.data.Profile
 import com.grka.xray.desktop.data.Store
 import com.grka.xray.desktop.data.Subscription
@@ -44,8 +45,13 @@ import com.grka.xray.desktop.net.SubscriptionManager
 import com.grka.xray.desktop.util.Utils
 import kotlinx.coroutines.launch
 
+/**
+ * [onProfileChosen] fires once a server has been picked, so the caller can send
+ * the user back to the home screen — picking a server is the end of the errand
+ * that brought them here.
+ */
 @Composable
-fun ServersScreen() {
+fun ServersScreen(onProfileChosen: () -> Unit = {}) {
     val cs = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
 
@@ -152,7 +158,10 @@ fun ServersScreen() {
                         profile = profile,
                         selected = profile.id == selectedId,
                         ping = pings[profile.id],
-                        onSelect = { Store.selectProfile(profile.id) },
+                        onSelect = {
+                            onProfileChosen()
+                            scope.launch { CoreRuntime.switchProfile(profile) }
+                        },
                         onDelete = { Store.deleteProfile(profile.id) },
                     )
                 }

@@ -57,7 +57,7 @@ fun App() {
             Box(Modifier.weight(1f).fillMaxHeight()) {
                 when (tab) {
                     Tab.HOME -> HomeScreen(onOpenServers = { tab = Tab.SERVERS })
-                    Tab.SERVERS -> ServersScreen()
+                    Tab.SERVERS -> ServersScreen(onProfileChosen = { tab = Tab.HOME })
                     Tab.SETTINGS -> SettingsScreen()
                     Tab.LOGS -> LogScreen()
                 }

@@ -40,6 +40,8 @@ fun main() {
 
         val state by CoreRuntime.state.collectAsState()
         val mode by Store.modeFlow.collectAsState()
+        val profiles by Store.profilesFlow.collectAsState()
+        val selectedId by Store.selectedIdFlow.collectAsState()
         val connected = state == ConnState.CONNECTED
 
         LaunchedEffect(Unit) {
@@ -67,6 +69,20 @@ fun main() {
                     }
                 }
                 Separator()
+                // Servers live in a submenu: a subscription can carry dozens,
+                // and a flat list that long would push everything else off the
+                // screen. Picking one switches the live connection over.
+                if (profiles.isNotEmpty()) {
+                    Menu("Серверы") {
+                        for (profile in profiles) {
+                            val mark = if (profile.id == selectedId) "● " else "   "
+                            Item(mark + profile.name) {
+                                scope.launch { CoreRuntime.switchProfile(profile) }
+                            }
+                        }
+                    }
+                    Separator()
+                }
                 // Same three modes as the switch on the home screen, so the
                 // common action needs no window at all.
                 for ((value, label) in listOf(
