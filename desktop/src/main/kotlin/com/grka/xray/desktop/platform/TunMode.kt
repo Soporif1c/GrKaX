@@ -30,6 +30,17 @@ object TunMode {
     @Volatile
     private var appliedService: String? = null
 
+    /**
+     * The physical interface this tunnel was built on, remembered for as long
+     * as it is up. Once the /1 routes are in place the default route points at
+     * our own utun device, so anything that needs the real interface after that
+     * has to read it here rather than ask the route table — see
+     * [com.grka.xray.desktop.data.Store.settingsSnapshot].
+     */
+    @Volatile
+    var physicalInterface: String? = null
+        private set
+
     fun enable(socksPort: Int, serverHost: String?): String? {
         if (!Platform.isMac) return "TUN-режим пока реализован только для macOS"
 
@@ -68,6 +79,7 @@ object TunMode {
             return "Не удалось поднять TUN: ${result.message()}"
         }
         appliedService = service
+        physicalInterface = iface
         CoreRuntime.log("TUN поднят (${result.out.trim()}), интерфейс $iface, сеть «$service»")
         if (serverIps.isEmpty()) {
             // Not fatal — an IPv6-only or unresolvable server may still work —
@@ -102,6 +114,7 @@ object TunMode {
         if (!Platform.isMac) return
         val service = appliedService ?: MacNet.activeService() ?: ""
         appliedService = null
+        physicalInterface = null
         val script = Platform.bundled("grkax-tun.sh")
         if (!script.isFile) return
         val command = listOf("/bin/sh", script.absolutePath, "down", service)

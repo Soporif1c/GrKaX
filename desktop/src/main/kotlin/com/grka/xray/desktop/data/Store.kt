@@ -301,8 +301,13 @@ object Store {
         routeOnly = routeOnly,
         mux = mux,
         logLevel = logLevel,
+        // With the tunnel up the default route points at our own utun device,
+        // so asking the route table would bind the core's outbounds to the
+        // tunnel they feed. Prefer the interface the tunnel remembered; fall
+        // back to discovery only before it exists.
         bindInterface = if (networkMode == AppConfig.NET_TUN) {
-            com.grka.xray.desktop.platform.MacNet.defaultInterface()
+            com.grka.xray.desktop.platform.TunMode.physicalInterface
+                ?: com.grka.xray.desktop.platform.MacNet.defaultInterface()
         } else {
             null
         },
