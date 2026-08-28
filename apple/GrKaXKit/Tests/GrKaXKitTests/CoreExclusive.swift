@@ -40,7 +40,13 @@ private actor CoreGate {
 /// `isolation: #isolation` keeps the body in the caller's isolation domain — a
 /// `@MainActor` test stays on the main actor rather than having to hand a
 /// non-Sendable closure across an actor boundary.
-func withExclusiveCore<T>(
+///
+/// `T: Sendable` because the result does cross one: it comes back out past the
+/// gate's actor. Swift 6.3 infers that away for the `Void` every caller
+/// returns; older toolchains, including the one on the CI runner, do not — and
+/// they are right that the unconstrained signature promised more than it could
+/// keep.
+func withExclusiveCore<T: Sendable>(
     isolation: isolated (any Actor)? = #isolation,
     _ body: () async throws -> T
 ) async rethrows -> T {
