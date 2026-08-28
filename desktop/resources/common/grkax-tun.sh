@@ -75,9 +75,17 @@ cmd_up() {
     DEV=$(pick_device) || { echo "no free utun device" >&2; exit 1; }
     echo "$DEV" > "$DEV_FILE"
 
+    # Deliberately no -interface: that flag binds tun2socks' outbound sockets to
+    # the physical interface with IP_BOUND_IF, which is right for a proxy out on
+    # the network and fatal for one on loopback — connect() to 127.0.0.1 from
+    # en0's address fails with EADDRNOTAVAIL, and every packet entering the
+    # tunnel is dropped. Nothing is lost by leaving it off: 127/8 routes to lo0,
+    # which outranks the /1 routes below, so this connection cannot loop back
+    # into the tunnel it serves.
+    #
     # tun2socks only accepts debug|info|warn|error|silent — anything else and it
     # exits before creating the device.
-    "$BIN" -device "$DEV" -proxy "socks5://127.0.0.1:$PORT" -interface "$IFACE" \
+    "$BIN" -device "$DEV" -proxy "socks5://127.0.0.1:$PORT" -interface lo0 \
         -loglevel warn > "$LOG_FILE" 2>&1 &
     TUN_PID=$!
     echo "$TUN_PID" > "$PID_FILE"
