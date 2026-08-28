@@ -1,0 +1,54 @@
+[
+    {
+        "input": "{\"b\":1,\"a\":2,\"c\":3}",
+        "compact": "{\"b\":1,\"a\":2,\"c\":3}"
+    },
+    {
+        "input": "{\"z\":{\"y\":{\"x\":[1,2,3]}}}",
+        "compact": "{\"z\":{\"y\":{\"x\":[1,2,3]}}}"
+    },
+    {
+        "input": "{\"n\":443,\"f\":1.5,\"e\":1e3,\"neg\":-7,\"big\":10000000000,\"zero\":0.0}",
+        "compact": "{\"n\":443,\"f\":1.5,\"e\":1e3,\"neg\":-7,\"big\":10000000000,\"zero\":0.0}"
+    },
+    {
+        "input": "{\"t\":true,\"f\":false,\"nul\":null}",
+        "compact": "{\"t\":true,\"f\":false,\"nul\":null}"
+    },
+    {
+        "input": "{\"s\":\"quote\\\" back\\\\ slash/ tab\\t nl\\n\"}",
+        "compact": "{\"s\":\"quote\\\" back\\\\ slash/ tab\\t nl\\n\"}"
+    },
+    {
+        "input": "{\"unicode\":\"Берлин\",\"emoji\":\"🚀\",\"escaped\":\"Aé\"}",
+        "compact": "{\"unicode\":\"Берлин\",\"emoji\":\"🚀\",\"escaped\":\"Aé\"}"
+    },
+    {
+        "input": "{\"ctrl\":\"a\u0001b\"}",
+        "compact": "{\"ctrl\":\"a\\u0001b\"}"
+    },
+    {
+        "input": "[]",
+        "compact": "[]"
+    },
+    {
+        "input": "{}",
+        "compact": "{}"
+    },
+    {
+        "input": "{\"empty_obj\":{},\"empty_arr\":[]}",
+        "compact": "{\"empty_obj\":{},\"empty_arr\":[]}"
+    },
+    {
+        "input": "[{\"a\":1},{\"a\":2}]",
+        "compact": "[{\"a\":1},{\"a\":2}]"
+    },
+    {
+        "input": "{\"dup\":1,\"dup\":2}",
+        "compact": "{\"dup\":2}"
+    },
+    {
+        "input": "  {\"spaced\"  :  [ 1 , 2 ]  }  ",
+        "compact": "{\"spaced\":[1,2]}"
+    }
+]

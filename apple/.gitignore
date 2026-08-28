@@ -1,0 +1,8 @@
+# Fetched by scripts/fetch-libxray.sh — ~300 MB, same policy as the xray and
+# tun2socks binaries on the Compose side.
+vendor/
+.build/
+# Per-user Xcode state, wherever it turns up — the anchored patterns this
+# replaces missed the copies nested under .swiftpm/.
+**/xcuserdata/
+DerivedData/
