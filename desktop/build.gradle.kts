@@ -31,6 +31,14 @@ tasks.processResources {
     }
 }
 
+// Dumps what the Kotlin parsers and config builder produce, as fixtures the
+// Swift port is tested against. Regenerate after changing either side.
+tasks.register<JavaExec>("golden") {
+    mainClass.set("com.grka.xray.desktop.GoldenMainKt")
+    classpath = sourceSets["main"].runtimeClasspath
+    args = listOfNotNull(project.findProperty("goldenOut")?.toString())
+}
+
 // Renders every routing mode to disk; CI then validates each with `xray -test`.
 tasks.register<JavaExec>("smoke") {
     mainClass.set("com.grka.xray.desktop.SmokeMainKt")

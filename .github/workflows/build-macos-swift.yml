@@ -1,0 +1,138 @@
+name: Build macOS (Swift)
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Тег релиза для выгрузки .dmg (например mac-swift-v0.1.0)'
+        required: false
+        type: string
+  push:
+    branches:
+      - main
+    paths:
+      - 'apple/**'
+      - '.github/workflows/build-macos-swift.yml'
+  pull_request:
+    paths:
+      - 'apple/**'
+      - '.github/workflows/build-macos-swift.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: macOS universal
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # No matrix here, unlike the Compose workflow: Xcode builds both slices
+      # in one Release run, so a single arm64 runner produces the universal app.
+      - name: Fetch vendored binaries
+        run: |
+          set -euo pipefail
+          apple/scripts/fetch-libxray.sh
+          apple/scripts/fetch-tun2socks.sh universal
+          apple/scripts/fetch-geodata.sh
+          ls -la apple/vendor
+
+      - name: Test GrKaXKit
+        run: apple/scripts/test.sh
+
+      - name: Build app
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project apple/GrKaX.xcodeproj \
+            -scheme GrKaX \
+            -configuration Release \
+            -destination 'platform=macOS' \
+            -derivedDataPath build/apple \
+            build
+
+      - name: Check the bundle is what it claims to be
+        id: app
+        run: |
+          set -euo pipefail
+          APP="build/apple/Build/Products/Release/GrKa X.app"
+          test -d "$APP"
+
+          # Universal, or half the users get an app that will not launch.
+          archs=$(lipo -archs "$APP/Contents/MacOS/GrKa X")
+          echo "app: $archs"
+          case "$archs" in *arm64*x86_64*|*x86_64*arm64*) ;; *)
+            echo "not universal: $archs" >&2; exit 1 ;;
+          esac
+
+          # The helper is a separate process and has to cover both too.
+          t_archs=$(lipo -archs "$APP/Contents/Resources/tun2socks")
+          echo "tun2socks: $t_archs"
+          case "$t_archs" in *arm64*x86_64*|*x86_64*arm64*) ;; *)
+            echo "tun2socks not universal: $t_archs" >&2; exit 1 ;;
+          esac
+
+          # The core is linked in, not shipped beside the app — no xray binary
+          # here, unlike the Compose build.
+          test ! -e "$APP/Contents/Resources/xray"
+          nm -gU "$APP/Contents/MacOS/GrKa X" | grep -q CGoInvoke
+
+          for f in geoip.dat geosite.dat grkax-tun.sh tun2socks; do
+            test -s "$APP/Contents/Resources/$f"
+          done
+
+          echo "app=$APP" >> "$GITHUB_OUTPUT"
+
+      - name: Ad-hoc sign
+        run: |
+          set -euo pipefail
+          APP="${{ steps.app.outputs.app }}"
+          # Packaging does not carry the executable bit through reliably, and a
+          # signature over a file we then have to chmod at runtime is a broken
+          # signature.
+          chmod +x "$APP/Contents/Resources/tun2socks" "$APP/Contents/Resources/grkax-tun.sh"
+          # Apple Silicon refuses to execute unsigned Mach-O binaries. Without a
+          # Developer ID we sign ad-hoc, which is enough to run — users still
+          # have to clear the quarantine flag after downloading. Replace this
+          # with a real identity + notarisation once the account exists.
+          codesign --force --deep --sign - "$APP"
+          codesign --verify --verbose=2 "$APP"
+
+      - name: Package DMG
+        id: dmg
+        run: |
+          set -euo pipefail
+          staging=$(mktemp -d)
+          cp -R "${{ steps.app.outputs.app }}" "$staging/"
+          ln -s /Applications "$staging/Applications"
+          # No version in the file name on purpose: it keeps
+          # releases/latest/download/<name> a permanent link, the same trick the
+          # Compose build and the Android APKs use.
+          OUT="GrKaX-macos-swift-universal.dmg"
+          hdiutil create -volname "GrKa X" -srcfolder "$staging" \
+            -ov -format UDZO "$OUT"
+          echo "dmg=$OUT" >> "$GITHUB_OUTPUT"
+          ls -lh "$OUT"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: dmg-swift-universal
+          path: ${{ steps.dmg.outputs.dmg }}
+
+      - name: Upload to release
+        if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: ${{ steps.dmg.outputs.dmg }}
+          tag: ${{ inputs.release_tag }}
+          file_glob: false
+          prerelease: true
